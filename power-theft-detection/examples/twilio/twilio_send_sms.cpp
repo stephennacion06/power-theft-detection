@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <Adafruit_I2CDevice.h>
 #include "twilio.hpp"
 
 // Set these - but DON'T push them to GitHub!
@@ -15,7 +14,7 @@ static const char *from_number = "";
 // You choose!
 // Phone number should start with "+<countrycode>"
 static const char *to_number = "";
-static const char *message = "WARNING! Electrical Power theft Detected! House Intruder Detected! [SMS TEST]";
+static const char *message = "Sent from my ESP32";
 
 Twilio *twilio;
 

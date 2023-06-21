@@ -1,3 +1,5 @@
-SPI
+mathworks/ThingSpeak@^2.0.0
 adafruit/Adafruit ADS1X15@^2.4.0
 openenergymonitor/EmonLib@^1.1.0
+SPI
+ademuri/twilio-esp32-client@^0.1.0
