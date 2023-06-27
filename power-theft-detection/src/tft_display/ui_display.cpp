@@ -2,6 +2,7 @@
 #include "ui_display.h"
 #include <TFT_eSPI.h> // Graphics and font library for ILI9341 driver chip
 #include <SPI.h>
+#include <EEPROM.h>
 
 static TFT_eSPI tft = TFT_eSPI();  // Invoke library
 
@@ -187,8 +188,14 @@ void uiSetupDisplayKeypadLoop( void )
       }
 
       if (b == 2) {
-        status("Sent value to serial port");
-        Serial.println(numberBuffer);
+        // NOTE: SEND BUTTON HANDLER 
+        status("Setting Client Channel ID");
+        int converterNumber = std::stoi(numberBuffer);
+        Serial.println("[DEBUG] ConverterNumber Value: " + String(converterNumber));
+        // Update flag address 6
+        EEPROM.write(6, 99);;
+        EEPROM.commit();
+        saveToFlashChannelID(converterNumber);
       }
       // we dont really check that the text field makes sense
       // just try to call
@@ -213,6 +220,17 @@ void uiSetupDisplayKeypadLoop( void )
       delay(10); // UI debouncing
     }
   }
+}
+
+void saveToFlashChannelID(int value) 
+{
+    for (int i = 0; i < 6; i++) 
+    {
+    byte digit = value % 10;
+    EEPROM.write(i, digit);
+    value /= 10;
+    }
+    EEPROM.commit();
 }
 
 /* -------------------- Private Function Definition -------------------------------- */
@@ -246,3 +264,4 @@ static void status(const char *msg) {
   tft.setTextSize(1);
   tft.drawString(msg, STATUS_X, STATUS_Y);
 }
+

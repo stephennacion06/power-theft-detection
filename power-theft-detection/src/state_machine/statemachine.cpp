@@ -1,8 +1,13 @@
 #include <Arduino.h>
 #include "statemachine.h"
 #include "tft_display/ui_display.h"
+#include <EEPROM.h>
+
+uint32_t customerChannelID = 0;
 
 UIuserSetupState volatile projectCurrentSetupState = UI_HOME_SECURITY_SETUP_TEXT;
+
+static int  readFromEEPROM( void ); 
 
 void setupFlow( void )
 {
@@ -37,17 +42,31 @@ void setupFlow( void )
     
     case UI_HOME_SECURITY_SETUP_CHANNEL_ID_KEYPAD_LOOP:
         uiSetupDisplayKeypadLoop();
-        // TODO: Check if channel id set before updating status
-        // projectCurrentSetupState = UI_HOME_SECUIRTY_SETUP_DONE_SETUP;
+        customerChannelID = readFromEEPROM();
+        if ( ( customerChannelID >= 100000 && customerChannelID <= 999999 ) &&  ( 99 == EEPROM.read(6) ) )
+        {
+            projectCurrentSetupState = UI_HOME_SECURITY_SETUP_TEXT;
+            EEPROM.end();
+        }
+        Serial.println("[DEBUG] customerChannelID: " + String(customerChannelID));
         break;
-    
+     
     default:
         break;
     }
-
 }
 
 void dashboardFlow( void )
 {
 
+}
+
+int readFromEEPROM() 
+{
+    int value = 0;
+    for (int i = 5; i >= 0; i--) {
+    byte digit = EEPROM.read(i);
+    value = value * 10 + digit;
+    }
+    return value;
 }

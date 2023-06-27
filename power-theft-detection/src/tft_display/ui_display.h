@@ -54,4 +54,5 @@ void touch_calibrate( void );
 void uiSetupDisplayDrawKeypad( void );
 void uiSetupDisplayKeypadLoop( void );
 
+void saveToFlashChannelID(int value);
 #endif  // UI_DISPLAY_H
