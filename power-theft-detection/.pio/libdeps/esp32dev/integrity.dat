@@ -1,6 +1,7 @@
-bodmer/TFT_eSPI@^2.5.30
+bblanchon/ArduinoJson@^6.21.2
 adafruit/Adafruit ADS1X15@^2.4.0
-ademuri/twilio-esp32-client@^0.1.0
-openenergymonitor/EmonLib@^1.1.0
-SPI
 mathworks/ThingSpeak@^2.0.0
+bodmer/TFT_eSPI@^2.5.30
+SPI
+openenergymonitor/EmonLib@^1.1.0
+ademuri/twilio-esp32-client@^0.1.0
