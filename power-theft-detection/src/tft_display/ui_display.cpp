@@ -3,6 +3,8 @@
 #include <TFT_eSPI.h> // Graphics and font library for ILI9341 driver chip
 #include <SPI.h>
 #include <EEPROM.h>
+#include "state_machine/statemachine.h"
+#include "thingspeak/thingspeak_security.h"
 
 static TFT_eSPI tft = TFT_eSPI();  // Invoke library
 
@@ -32,6 +34,7 @@ void initTFT( void )
 {
     tft.init();
     tft.setRotation(2);
+    tft.fillScreen(TFT_BLACK);
 }
 
 void displaySetupTextInsertChannelID( void )
@@ -44,6 +47,78 @@ void displaySetupTextInsertChannelID( void )
     tft.println("    PLEASE INSERT");
     tft.println("    HOME OWNER");
     tft.println("    CHANNEL ID");
+}
+
+
+void displaySetupConnectToWifi( void )
+{
+    tft.fillScreen(TFT_BLACK);
+    tft.setCursor(0, (TFT_HEIGHT/2) - 50, 2);
+    tft.setTextSize(1);
+  // Set the font colour to be yellow with no background, set to font 7
+    tft.setTextColor(TFT_YELLOW); tft.setTextFont(4);
+    tft.println("    CONNECTING");
+    tft.println("      TO WIFI");
+}
+
+void displaySetupConnectToWifiFailed( void )
+{
+    tft.fillScreen(TFT_BLACK);
+    tft.setCursor(0, (TFT_HEIGHT/2) - 50, 2);
+    tft.setTextSize(1);
+  // Set the font colour to be yellow with no background, set to font 7
+    tft.setTextColor(TFT_YELLOW); tft.setTextFont(4);
+    tft.println("    CONNECTING");
+    tft.println("      TO WIFI");
+    tft.println("      FAILED!");
+    tft.println("    RESTARTING!");
+}
+
+void displaySetupConnectToWifiPassed( void )
+{
+    tft.fillScreen(TFT_BLACK);
+    tft.setCursor(0, (TFT_HEIGHT/2) - 50, 2);
+    tft.setTextSize(1);
+  // Set the font colour to be yellow with no background, set to font 7
+    tft.setTextColor(TFT_YELLOW); tft.setTextFont(4);
+    tft.println("    CONNECTING");
+    tft.println("      TO WIFI");
+    tft.println("      SUCCESSFUL!");
+}
+
+void displayThingspeakExtraction( void )
+{
+    tft.fillScreen(TFT_BLACK);
+    tft.setCursor(0, (TFT_HEIGHT/2) - 50, 2);
+    tft.setTextSize(1);
+  // Set the font colour to be yellow with no background, set to font 7
+    tft.setTextColor(TFT_YELLOW); tft.setTextFont(4);
+    tft.println("    GETTING SAVED");
+    tft.println("    HOMEOWNER ");
+    tft.println("    INFORMATION ");
+}
+
+void displayThingspeakExtractionInformation( void )
+{
+    tft.fillScreen(TFT_BLACK);
+    tft.setCursor(0, 0, 2);
+    tft.setTextColor(TFT_YELLOW); tft.setTextFont(2);
+    tft.setTextSize(1);
+    // Set the font colour to be yellow with no background, set to font 7
+    
+    
+    tft.println("Home Owner Information");
+    tft.print("Maximum Wattage: ");
+    tft.print(g_homeOwnerWattageMax);
+    tft.println("W");
+
+
+    tft.print("Home Address: ");
+    tft.println(g_homeOwnerAddress);
+
+    tft.print("Contact Number: ");
+    tft.println(g_homeOwnerContactNumber);
+
 }
 
 void displaySetupText( void )
@@ -188,13 +263,17 @@ void uiSetupDisplayKeypadLoop( void )
       }
 
       if (b == 2) {
-        // NOTE: SEND BUTTON HANDLER 
+        // NOTE: SEND BUTTON HANDLER
+        // TODO: Add checking here if input value is a valid number; Status invalid number if not
         status("Setting Client Channel ID");
+        
         int converterNumber = std::stoi(numberBuffer);
         Serial.println("[DEBUG] ConverterNumber Value: " + String(converterNumber));
-        // Update flag address 6
-        EEPROM.write(6, 99);;
+        // Update flag address MAXIMUM_CHANNEL_ID_NUMBER
+        
+        EEPROM.write(MAXIMUM_CHANNEL_ID_NUMBER, DONE_SET_VALUE);;
         EEPROM.commit();
+        
         saveToFlashChannelID(converterNumber);
       }
       // we dont really check that the text field makes sense
@@ -224,7 +303,7 @@ void uiSetupDisplayKeypadLoop( void )
 
 void saveToFlashChannelID(int value) 
 {
-    for (int i = 0; i < 6; i++) 
+    for (int i = 0; i < MAXIMUM_CHANNEL_ID_NUMBER; i++) 
     {
     byte digit = value % 10;
     EEPROM.write(i, digit);

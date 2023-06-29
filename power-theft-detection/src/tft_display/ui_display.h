@@ -1,7 +1,7 @@
 #ifndef UI_DISPLAY_H
 #define UI_DISPLAY_H
 
-#define  UI_SETUP_DELAY_TEXT 5000 
+#define  UI_SETUP_DELAY_TEXT 2500 
 
 
 #include "FS.h"
@@ -53,6 +53,10 @@ void displaySetupText( void );
 void touch_calibrate( void );
 void uiSetupDisplayDrawKeypad( void );
 void uiSetupDisplayKeypadLoop( void );
-
+void displaySetupConnectToWifi( void );
+void displaySetupConnectToWifiFailed( void );
+void displaySetupConnectToWifiPassed( void );
+void displayThingspeakExtraction( void );
+void displayThingspeakExtractionInformation( void );
 void saveToFlashChannelID(int value);
 #endif  // UI_DISPLAY_H

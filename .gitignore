@@ -30,3 +30,4 @@
 *.exe
 *.out
 *.app
+power-theft-detection/src/credentials/credentials.h

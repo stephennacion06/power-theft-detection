@@ -1,5 +1,9 @@
 #ifndef STATE_MACHINE_H
 #define STATE_MACHINE_H
+
+#define DONE_SET_VALUE 99
+#define MAXIMUM_CHANNEL_ID_NUMBER 7
+
 // Enumerated type for the states
 typedef enum {
     NOT_USED,
@@ -16,8 +20,8 @@ typedef enum {
     TEMPORARY
 } UIuserDashboardState;
 
-
-extern UIuserSetupState volatile projectCurrentSetupState;
+extern uint32_t g_customerChannelID;
+extern UIuserSetupState volatile g_projectCurrentSetupState;
 extern UIuserDashboardState volatile projectCurrentDashboardState;
 
 void setupFlow( void );
