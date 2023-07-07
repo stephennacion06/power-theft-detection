@@ -4,13 +4,16 @@
 #include <ArduinoJson.h>
 #include "thingspeak_security.h"
 #include "credentials/credentials.h"
+#include "ThingSpeak.h"
+
+WiFiClient  client;
 
 uint32_t g_homeOwnerWattageMax = 0;
 String  g_homeOwnerAddress;
 String  g_homeOwnerContactNumber;
 
-float g_homeOwnerLatitude = 0;
-float g_homeOwnerLongtitude = 0;
+String g_homeOwnerLatitude;
+String g_homeOwnerLongtitude;
 
 static void extractParameters( String inputString );
 
@@ -52,8 +55,8 @@ bool updateHomeOwnerInformation( const uint32_t targetChannelId )
         // Found the desired channel
         String channelName = channel["name"].as<String>();
         String channelDescription = channel["description"].as<String>();
-        String latitude = channel["latitude"].as<String>();
-        String longitude = channel["longitude"].as<String>();
+        g_homeOwnerLatitude = channel["latitude"].as<String>();
+        g_homeOwnerLongtitude = channel["longitude"].as<String>();
 
         // Print the channel details
         Serial.print("Channel ID: ");
@@ -63,9 +66,9 @@ bool updateHomeOwnerInformation( const uint32_t targetChannelId )
         Serial.print("Channel Description: ");
         Serial.println(channelDescription);
         Serial.print("Latitude: ");
-        Serial.println(latitude);
+        Serial.println(g_homeOwnerLatitude);
         Serial.print("Longtitude: ");
-        Serial.println(longitude);
+        Serial.println(g_homeOwnerLongtitude);
         Serial.println("--------Extract Information -----");
         extractParameters(channelDescription);
         returnStatus = true;
@@ -77,6 +80,31 @@ bool updateHomeOwnerInformation( const uint32_t targetChannelId )
   }
 
   return returnStatus;
+}
+
+bool thingSpeakSetup( void )
+{
+  ThingSpeak.begin(client);  // Initialize ThingSpeak
+}
+
+void thingSpeakTransmit( float wattage, bool fireDetected, bool fireTheftDetect )
+{
+  ThingSpeak.setField(1, wattage);
+  ThingSpeak.setField(2, fireDetected);
+  ThingSpeak.setField(5, fireTheftDetect);
+
+  // TODO: Send Status and Insert Channel Number and API keys
+  // set the status 
+  // ThingSpeak.setStatus(myStatus);
+  
+  // write to the ThingSpeak channel
+  // int x = ThingSpeak.writeFields(myChannelNumber, WRITE_API_KEY);
+  // if(x == 200){
+  //   Serial.println("Channel update successful.");
+  // }
+  // else{
+  //   Serial.println("Problem updating channel. HTTP error code " + String(x));
+  // }
 }
 
 static void extractParameters( String inputString )

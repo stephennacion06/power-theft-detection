@@ -7,6 +7,8 @@ uint32_t g_customerChannelID = 0;
 
 UIuserSetupState volatile g_projectCurrentSetupState = UI_HOME_SECURITY_SETUP_TEXT;
 
+UIdashboardState volatile g_projectDashboardState = UI_DASHBOARD_SETUP;
+
 static int  readFromEEPROM( void ); 
 
 void setupFlow( void )
@@ -44,7 +46,7 @@ void setupFlow( void )
         uiSetupDisplayKeypadLoop();
         g_customerChannelID = readFromEEPROM();
         setFlag = EEPROM.read(MAXIMUM_CHANNEL_ID_NUMBER);
-        if ( ( g_customerChannelID >= 1000000 && g_customerChannelID <= 9999999 ) &&  ( DONE_SET_VALUE == setFlag ) )
+        if ( ( g_customerChannelID >= validNumberMin && g_customerChannelID <= validNumberMax ) &&  ( DONE_SET_VALUE == setFlag ) )
         {
             Serial.println(g_customerChannelID);
             Serial.println(setFlag);
@@ -60,7 +62,20 @@ void setupFlow( void )
 
 void dashboardFlow( void )
 {
+    switch (g_projectDashboardState)
+    {
+    case UI_DASHBOARD_SETUP:
+        dashboardSetup();
+        g_projectDashboardState = UI_DASHBOARD_LOOP;
+        break;
 
+    case UI_DASHBOARD_LOOP:
+        dashboardLoop();
+        break;
+    
+    default:
+        break;
+    }
 }
 
 static int readFromEEPROM() 

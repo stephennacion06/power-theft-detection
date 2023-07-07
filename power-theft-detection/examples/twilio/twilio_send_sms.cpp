@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "twilio.hpp"
+#include "thingspeak/thingspeak_security.h"
 
 // Set these - but DON'T push them to GitHub!
 static const char *ssid = "";
@@ -35,7 +36,7 @@ void setup() {
 
   delay(1000);
   String response;
-  bool success = twilio->send_message(to_number, from_number, message, response);
+  bool success = twilio->send_message(g_homeOwnerContactNumber, from_number, message, response);
   if (success) {
     Serial.println("Sent message successfully!");
   } else {

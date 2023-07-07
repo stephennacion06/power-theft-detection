@@ -17,6 +17,11 @@ typedef enum {
 } UIuserSetupState;
 
 typedef enum {
+    UI_DASHBOARD_SETUP,
+    UI_DASHBOARD_LOOP
+} UIdashboardState;
+
+typedef enum {
     TEMPORARY
 } UIuserDashboardState;
 

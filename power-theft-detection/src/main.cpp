@@ -73,16 +73,11 @@ void setup(void)
     successUpdate = updateHomeOwnerInformation( g_customerChannelID );
   }
   displayThingspeakExtractionInformation();
-
-  // TODO: SMS test run all
-
-  sendInitMessage();
-
 }
 
 void loop() 
 {
-
+  dashboardFlow();
 }
 
 static int readFlashChannelID( void ) 
@@ -94,6 +89,3 @@ static int readFlashChannelID( void )
     }
     return value;
 }
-
-
-

@@ -1,5 +1,6 @@
 #include "twilio_sms.h"
 #include "credentials/credentials.h"
+#include "thingspeak/thingspeak_security.h"
 
 // Values from Twilio (find them on the dashboard)
 const char *account_sid = ACCOUNT_SSID_TWILLIO;
@@ -25,7 +26,7 @@ bool sendInitMessage( void )
     String response;
     bool success;
 
-    success = twilio->send_message(number, from_number, smsMessage, response);
+    success = twilio->send_message(g_homeOwnerContactNumber, from_number, smsMessage, response);
     
     if (success) {
     Serial.println("Sent message successfully!");
@@ -39,15 +40,62 @@ bool sendInitMessage( void )
 bool sendPowerTheftDetected( void )
 {
 
+    String smsMessage = "WARNING! POWERTHEFT DETECTED! LOCATED AT " + g_homeOwnerAddress + ". Google Map Location: ";
+    String gpsURL = "http://www.google.com/maps/place/" + g_homeOwnerLatitude + "," + g_homeOwnerLongtitude;
+    smsMessage = smsMessage + gpsURL;
+    String response;
+    bool success;
 
+    Serial.println(smsMessage);
+
+    // TODO: Add send to monitoring station number
+    success = twilio->send_message(g_homeOwnerContactNumber, from_number, smsMessage, response);
+    
+    if (success) {
+    Serial.println("Sent message successfully!");
+    } else {
+    Serial.println(response);
+    }
+    return success;
 }
 
 bool sendHouseIntruder( void )
 {
+    String smsMessage = "WARNING! LOCK/MOTION SENSOR ACTIVATED!";
+    String response;
+    bool success;
 
+    Serial.println(smsMessage);
+
+    success = twilio->send_message(g_homeOwnerContactNumber, from_number, smsMessage, response);
+    
+    if (success) {
+    Serial.println("Sent message successfully!");
+    } else {
+    Serial.println(response);
+    }
+    return success;
 }
+
 
 bool sendFireDetected( void )
 {
+    String smsMessage = "WARNING! FIRE DETECTED AT " + g_homeOwnerAddress + ". Google Map Location: ";
+    String gpsURL = "http://www.google.com/maps/place/" + g_homeOwnerLatitude + "," + g_homeOwnerLongtitude;
+    smsMessage = smsMessage + gpsURL;
+    String response;
+    bool success;
 
+    Serial.println(smsMessage);
+
+    // TODO: Add send to fire department or monitoring station
+    success = twilio->send_message(g_homeOwnerContactNumber, from_number, smsMessage, response);
+    
+    if (success) {
+    Serial.println("Sent message successfully!");
+    } else {
+    Serial.println(response);
+    }
+    return success;
+    return 0;
 }

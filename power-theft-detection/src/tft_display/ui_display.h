@@ -1,8 +1,15 @@
 #ifndef UI_DISPLAY_H
 #define UI_DISPLAY_H
 
+#define validNumber 7
+#define validNumberMin pow(10, validNumber - 1)
+#define validNumberMax pow(10, validNumber) - 1
+
 #define  UI_SETUP_DELAY_TEXT 2500 
 
+#define DASHBOARD_LOOP_PERIOD 1000 // Display updates every 1 second
+
+#define DASHBOARD_STATUS_LOOP_PERIOD 50 // Display updates every 1 second
 
 #include "FS.h"
 
@@ -59,4 +66,10 @@ void displaySetupConnectToWifiPassed( void );
 void displayThingspeakExtraction( void );
 void displayThingspeakExtractionInformation( void );
 void saveToFlashChannelID(int value);
+
+//Dashboard Public Function
+void dashboardSetup( void );
+void dashboardLoop( void );
+void dashboardPowerTheftDisplay( void );
+
 #endif  // UI_DISPLAY_H

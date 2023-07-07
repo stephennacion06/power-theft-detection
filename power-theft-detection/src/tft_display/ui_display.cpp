@@ -2,12 +2,58 @@
 #include "ui_display.h"
 #include <TFT_eSPI.h> // Graphics and font library for ILI9341 driver chip
 #include <SPI.h>
+#include <TFT_eWidget.h>  // Widget library
 #include <EEPROM.h>
 #include "state_machine/statemachine.h"
 #include "thingspeak/thingspeak_security.h"
+#include "twilio_sms/twilio_sms.h"
+#include "sensors/sensors.h"
+#include "Free_Fonts.h" // Include the header file attached to this sketch
+#include <Ticker.h>
 
 static TFT_eSPI tft = TFT_eSPI();  // Invoke library
+static MeterWidget   wattageWidget  = MeterWidget(&tft);
+static ButtonWidget lockSensorButton = ButtonWidget(&tft);
+static ButtonWidget motionSensorButton = ButtonWidget(&tft);
+static ButtonWidget FireSensorButton = ButtonWidget(&tft);
 
+// Dashboard
+static unsigned long updateTime = 0;  
+static unsigned long updateTimeStatus = 0;
+
+// Button Widget
+static bool doorButtonIsEnanbled = false;
+static bool motionButtonIsEnabled = false;
+static bool fireButtonIsEnabled = false;
+static unsigned long doorMillis = 0;
+static unsigned long motionMillis = 0;
+static unsigned long fireMillis = 0;
+static unsigned long doorTwillioMillis = 0;
+static unsigned long motionTwillioMillis = 0;
+static unsigned long fireTwillioMillis = 0;
+#define UPDATE_STATUS_TIME 60000 // 1 minute
+#define UPDATE_TWILLIO_TIME 60000 // 1 minute
+
+#define BUTTON_W 100
+#define BUTTON_H 50
+#define STARTING_H 30
+#define SPACE_H 5
+
+#define BUTTON_X 0
+#define DOOR_BUTTON_Y   ( ( tft.height() / 2 ) - BUTTON_H + STARTING_H)
+#define MOTION_BUTTON_Y ( ( tft.height() / 2 ) + STARTING_H + SPACE_H )
+#define FIRE_BUTTON_Y   ( ( tft.height() / 2 ) + BUTTON_H + STARTING_H +  ( SPACE_H * 2 ) )
+
+// Status
+#define STATUS_X_POSITION BUTTON_W + 5
+#define DOOR_STATUS_Y   ( DOOR_BUTTON_Y   + BUTTON_H/2 )
+#define MOTION_STATUS_Y ( MOTION_BUTTON_Y + BUTTON_H/2 )
+#define FIRE_STATUS_Y   ( FIRE_BUTTON_Y   + BUTTON_H/2 )
+
+// Create an array of button instances to use in for() loops
+// This is more useful where large numbers of buttons are employed
+ButtonWidget* btn[] = {&lockSensorButton , &motionSensorButton, &FireSensorButton};;
+uint8_t buttonCount = sizeof(btn) / sizeof(btn[0]);
 
 // Create 15 keys for the keypad
 static char keyLabel[15][5] = {"New", "Del", "Send", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "#" };
@@ -25,10 +71,25 @@ static uint8_t numberIndex = 0;
 // Invoke the TFT_eSPI button class and create all the button objects
 TFT_eSPI_Button key[15];
 
+
 /* -------------------- Private Function Declaration -------------------------------- */
 static void drawKeypad( void );
 static void status(const char *msg);
-
+static void wattageWidgetSetup( void );
+static void buttonWidgetSetup( void );
+static void lockSensorButtonPressAction(void);
+static void motionSensorButtonPressAction(void);
+static void fireSensorButtonPressAction(void);
+static void lockSensorButtonReleaseAction(void);
+static void motionSensorButtonReleaseAction(void);
+static void fireSensorButtonReleaseAction(void);
+static void touchscreencheck(void);
+static void statusDoorSetup(void);
+static void statusMotionSetup(void);
+static void statusFireSetup(void);
+static void updateStatusDoorSetup(void);
+static void updateStatusMotionSetup(void);
+static void updateStatusFireSetup(void);
 /* -------------------- Public Function Definition -------------------------------- */
 void initTFT( void )
 {
@@ -48,7 +109,6 @@ void displaySetupTextInsertChannelID( void )
     tft.println("    HOME OWNER");
     tft.println("    CHANNEL ID");
 }
-
 
 void displaySetupConnectToWifi( void )
 {
@@ -265,16 +325,21 @@ void uiSetupDisplayKeypadLoop( void )
       if (b == 2) {
         // NOTE: SEND BUTTON HANDLER
         // TODO: Add checking here if input value is a valid number; Status invalid number if not
-        status("Setting Client Channel ID");
-        
         int converterNumber = std::stoi(numberBuffer);
-        Serial.println("[DEBUG] ConverterNumber Value: " + String(converterNumber));
-        // Update flag address MAXIMUM_CHANNEL_ID_NUMBER
-        
-        EEPROM.write(MAXIMUM_CHANNEL_ID_NUMBER, DONE_SET_VALUE);;
-        EEPROM.commit();
-        
-        saveToFlashChannelID(converterNumber);
+
+        if (converterNumber >= validNumberMin && converterNumber <= validNumberMax)
+        {
+          status("Setting Client Channel ID");
+          Serial.println("[DEBUG] ConverterNumber Value: " + String(converterNumber));
+          // Update flag address MAXIMUM_CHANNEL_ID_NUMBER
+          
+          EEPROM.write(MAXIMUM_CHANNEL_ID_NUMBER, DONE_SET_VALUE);;
+          EEPROM.commit();
+          
+          saveToFlashChannelID(converterNumber);
+        } else {
+          status("ERROR! Invalid Client Channel ID");
+        }
       }
       // we dont really check that the text field makes sense
       // just try to call
@@ -312,6 +377,65 @@ void saveToFlashChannelID(int value)
     EEPROM.commit();
 }
 
+void dashboardSetup( void )
+{
+  thingSpeakSetup();
+
+  touch_calibrate();
+  buttonWidgetSetup();
+  wattageWidgetSetup();
+  
+  statusFireSetup();
+  statusDoorSetup();
+  statusMotionSetup();
+
+  currentSensorSetup();
+  voltageSensorSetup();
+  
+  pinMode(DOOR_SENSOR_PIN, INPUT);  // Set the specified pin as input
+  pinMode(FIRE_SENSOR_PIN, INPUT);  // Set the specified pin as input
+  pinMode(MOTION_SENSOR_PIN, INPUT); // Set the specified pin as input
+
+  powerTheftDetectionSetup();
+}
+
+void dashboardLoop( void )
+{
+  float current = getCurrent();
+  float voltage = getVoltage();
+  float wattage = 0;
+
+  touchscreencheck();
+
+  if (millis() - updateTimeStatus >= DASHBOARD_STATUS_LOOP_PERIOD) 
+  {
+    updateTimeStatus = millis();
+    updateStatusDoorSetup();
+    updateStatusMotionSetup();
+    updateStatusFireSetup();
+
+  }
+
+
+  if (millis() - updateTime >= DASHBOARD_LOOP_PERIOD) 
+  {
+    updateTime = millis();
+    
+    wattage = current*voltage;
+
+    wattageWidget.updateNeedle( wattage, 0 );
+
+    powerTheftDetection( wattage );
+  }
+
+  // TODO: Transmit Time every 1 minute
+}
+
+void dashboardPowerTheftDisplay( void )
+{
+
+}
+
 /* -------------------- Private Function Definition -------------------------------- */
 static void drawKeypad( void )
 {
@@ -332,7 +456,6 @@ static void drawKeypad( void )
   }
 }
 
-
 // Print something in the mini status bar
 static void status(const char *msg) {
   tft.setTextPadding(240);
@@ -344,3 +467,264 @@ static void status(const char *msg) {
   tft.drawString(msg, STATUS_X, STATUS_Y);
 }
 
+static void wattageWidgetSetup( void )
+{
+  String values[6];
+  int numValues = sizeof(values) / sizeof(values[0]);
+  for (int i = 0; i < numValues ; i++) 
+  {
+    int calculatedValue = i * (g_homeOwnerWattageMax / 5);
+    values[i] = String(calculatedValue);
+  }
+  wattageWidget.setZones(75, 100, 50, 75, 25, 50, 0, 25); // Example here red starts at 75% and ends at 100% of full scale
+  const char* firstLabel = values[0].c_str();
+  const char* SecondLabel = values[1].c_str();
+  const char* thirdLabel = values[2].c_str();
+  const char* fourthLabel = values[3].c_str();
+  const char* fifthLabel = values[4].c_str();
+  wattageWidget.analogMeter(0, 0, g_homeOwnerWattageMax, "W", firstLabel, SecondLabel, thirdLabel, fourthLabel, fifthLabel);    // Draw analogue meter at 0, 0
+}
+
+static void buttonWidgetSetup( void )
+{
+  lockSensorButton.initButtonUL(BUTTON_X , DOOR_BUTTON_Y, BUTTON_W, BUTTON_H, TFT_WHITE, TFT_BLACK, TFT_GREEN, " DOOR", 1);
+  lockSensorButton.setPressAction(lockSensorButtonPressAction);
+  lockSensorButton.setReleaseAction(lockSensorButtonReleaseAction);
+  lockSensorButton.drawSmoothButton(false, 3, TFT_BLACK); // 3 is outline width, TFT_BLACK is the surrounding background colour for anti-aliasing
+
+
+  motionSensorButton.initButtonUL(BUTTON_X, MOTION_BUTTON_Y, BUTTON_W, BUTTON_H, TFT_WHITE, TFT_BLACK, TFT_GREEN, "MOTION", 1);
+  motionSensorButton.setPressAction(motionSensorButtonPressAction);
+  motionSensorButton.setReleaseAction(motionSensorButtonReleaseAction);
+  motionSensorButton.drawSmoothButton(false, 3, TFT_BLACK); // 3 is outline width, TFT_BLACK is the surrounding background colour for anti-aliasing
+
+  FireSensorButton.initButtonUL(BUTTON_X, FIRE_BUTTON_Y, BUTTON_W, BUTTON_H, TFT_WHITE, TFT_BLACK, TFT_GREEN, " FIRE", 1);
+  FireSensorButton.setPressAction(fireSensorButtonPressAction);
+  FireSensorButton.setReleaseAction(fireSensorButtonReleaseAction);
+  FireSensorButton.drawSmoothButton(false, 3, TFT_BLACK); // 3 is outline width, TFT_BLACK is the surrounding background colour for anti-aliasing
+
+}
+
+static void lockSensorButtonPressAction(void)
+{
+  if (lockSensorButton.justPressed()) {
+    lockSensorButton.drawSmoothButton(!lockSensorButton.getState(), 3, TFT_BLACK, lockSensorButton.getState() ? " DOOR" : " DOOR");
+    doorButtonIsEnanbled = !doorButtonIsEnanbled;
+    
+    if( doorButtonIsEnanbled )
+    {
+      doorMillis = millis();
+    }
+
+    lockSensorButton.setPressTime(millis());
+  }
+}
+
+static void motionSensorButtonPressAction(void)
+{
+    if (motionSensorButton.justPressed()) {
+    motionSensorButton.drawSmoothButton(!motionSensorButton.getState(), 3, TFT_BLACK, motionSensorButton.getState() ? "MOTION" : "MOTION");
+    motionButtonIsEnabled = !motionButtonIsEnabled;
+
+    if( motionButtonIsEnabled )
+    {
+      motionMillis = millis();
+    }
+
+    motionSensorButton.setPressTime(millis());
+  }
+}
+
+static void fireSensorButtonPressAction(void)
+{
+    if (FireSensorButton.justPressed())
+    {
+      FireSensorButton.drawSmoothButton(!FireSensorButton.getState(), 3, TFT_BLACK, FireSensorButton.getState() ? " FIRE" : " FIRE");
+    
+      fireButtonIsEnabled = !fireButtonIsEnabled;
+
+      if( fireButtonIsEnabled )
+      {
+        fireMillis = millis();
+      }
+
+    FireSensorButton.setPressTime(millis());
+  }
+}
+
+static void lockSensorButtonReleaseAction(void)
+{
+
+}
+
+static void motionSensorButtonReleaseAction(void)
+{
+
+}
+
+static void fireSensorButtonReleaseAction(void)
+{
+
+}
+
+static void touchscreencheck(void)
+{
+  static uint32_t scanTime = millis();
+  uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
+  // Pressed will be set true if there is a valid touch on the screen
+  if (millis() - scanTime >= 25)
+  {
+
+  bool pressed = tft.getTouch(&t_x, &t_y);
+  scanTime = millis();
+  for (uint8_t b = 0; b < buttonCount; b++)
+  {
+    if( pressed && btn[b]->contains(t_x, t_y))
+    {
+      btn[b]->press(true);
+      btn[b]->pressAction();
+    }     
+    else
+    {
+      btn[b]->press(false);
+    }
+  }
+  }
+}
+
+static void statusDoorSetup(void)
+{
+  tft.setCursor(STATUS_X_POSITION, DOOR_STATUS_Y, 1);
+  tft.setTextColor(TFT_GREEN,TFT_BLACK,true); tft.setTextSize(1);
+  tft.println("DOOR SENSOR DISABLED");
+}
+
+static void statusMotionSetup(void) 
+{
+  tft.setCursor(STATUS_X_POSITION, MOTION_STATUS_Y, 1);
+  tft.setTextColor(TFT_GREEN,TFT_BLACK,true); tft.setTextSize(1);
+  tft.println("MOTION SENSOR DISABLED");
+}
+
+static void statusFireSetup(void)
+{
+  tft.setCursor(STATUS_X_POSITION, FIRE_STATUS_Y, 1);
+  tft.setTextColor(TFT_GREEN,TFT_BLACK,true);  tft.setTextSize(1);
+  tft.println( "FIRE SENSOR DISABLED");
+}
+
+static void updateStatusDoorSetup(void)
+{
+  tft.setCursor(STATUS_X_POSITION, DOOR_STATUS_Y, 1);
+  tft.setTextSize(1);
+
+  if ( doorButtonIsEnanbled )
+  {
+    if ( ( millis() - doorMillis ) >= UPDATE_STATUS_TIME )
+    {
+      if ( !doorSensorValue() )
+      {
+        tft.setTextColor(TFT_SKYBLUE,TFT_BLACK,true);
+        tft.println("DOOR SENSOR ENABLED  ");
+      }
+
+      else
+      {
+        tft.setTextColor(TFT_RED,TFT_BLACK,true);
+        tft.println("DOOR SENSOR ACTIVATED ");
+        if ( millis() - doorTwillioMillis >= UPDATE_TWILLIO_TIME ) 
+        {
+          doorTwillioMillis = millis();
+          sendHouseIntruder();
+        }
+      }
+    }
+    else
+    {
+      tft.setTextColor(TFT_WHITE,TFT_BLACK,true);
+      tft.println("ENABLING DOOR SENSOR ");
+    }
+  }
+  else
+  {
+    tft.setTextColor(TFT_GREEN,TFT_BLACK,true); 
+    tft.println("DOOR SENSOR DISABLED ");
+  }
+}
+
+static void updateStatusMotionSetup(void)
+{
+  tft.setCursor(STATUS_X_POSITION, MOTION_STATUS_Y, 1);
+  tft.setTextSize(1);
+
+  if ( motionButtonIsEnabled )
+  {
+    if ( ( millis() - motionMillis ) >= UPDATE_STATUS_TIME )
+    {
+      if ( motionSensorValue() )
+      {
+        tft.setTextColor(TFT_SKYBLUE,TFT_BLACK,true);
+        tft.println("MOTION SENSOR ENABLED ");
+      }
+
+      else
+      {
+        tft.setTextColor(TFT_RED,TFT_BLACK,true);
+        tft.println("MOTION SENSOR ACTIVE");
+        if ( millis() - motionTwillioMillis >= UPDATE_TWILLIO_TIME ) 
+        {
+          motionTwillioMillis = millis();
+          sendHouseIntruder();
+        }
+      }
+    }
+    else
+    {
+      tft.setTextColor(TFT_WHITE,TFT_BLACK,true);
+      tft.println("ENABLING MOTION SENSOR");
+    }
+  }
+  else
+  {
+    tft.setTextColor(TFT_GREEN,TFT_BLACK,true); 
+    tft.println("MOTION SENSOR DISABLED");
+  }
+}
+
+static void updateStatusFireSetup(void)
+{
+  tft.setCursor(STATUS_X_POSITION, FIRE_STATUS_Y, 1);
+  tft.setTextSize(1);
+
+  if ( fireButtonIsEnabled )
+  {
+    if ( ( millis() - fireMillis ) >= UPDATE_STATUS_TIME )
+    {
+      if ( !fireSensorValue() )
+      {
+        tft.setTextColor(TFT_SKYBLUE,TFT_BLACK,true);
+        tft.println("FIRE SENSOR ENABLED  ");
+      }
+      else
+      {
+        tft.setTextColor(TFT_RED,TFT_BLACK,true);
+        tft.println("FIRE SENSOR ACTIVATED");
+        if ( millis() - fireTwillioMillis >= UPDATE_TWILLIO_TIME ) 
+        {
+          fireTwillioMillis = millis();
+          sendFireDetected();
+        }
+      }
+    }
+    else
+    {
+      tft.setTextColor(TFT_WHITE,TFT_BLACK,true);
+      tft.println("ENABLING FIRE SENSOR ");
+    }
+  }
+  else
+  {
+    tft.setTextColor(TFT_GREEN,TFT_BLACK,true); 
+    tft.println("FIRE SENSOR DISABLED ");
+  }
+}
