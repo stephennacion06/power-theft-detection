@@ -62,17 +62,31 @@ void setupFlow( void )
 
 void dashboardFlow( void )
 {
+    int dashboardStatus = (UIDashboardError) BLANK_ERROR_MESSAGE;
     switch (g_projectDashboardState)
     {
     case UI_DASHBOARD_SETUP:
         dashboardSetup();
         g_projectDashboardState = UI_DASHBOARD_LOOP;
         break;
-
     case UI_DASHBOARD_LOOP:
-        dashboardLoop();
+        dashboardStatus = (UIDashboardError)  dashboardLoop();
+        if ( POWER_THEFT_DETECTED_UI == dashboardStatus)
+        {
+            g_projectDashboardState = UI_DASHBOARD_POWER_THEFT_DETECTED_SETUP;
+        }
         break;
-    
+    case UI_DASHBOARD_POWER_THEFT_DETECTED_SETUP:
+        dashBoardPowerTheftDetectedSetup();
+        g_projectDashboardState = UI_DASHBOARD_POWER_THEFT_DETECTED_LOOP;
+        break;
+    case UI_DASHBOARD_POWER_THEFT_DETECTED_LOOP:
+        dashboardStatus = (UIDashboardError) dashboardPowerTheftDisplay();
+        if ( POWER_THEFT_DETECTED_PROCEED == dashboardStatus )
+        {
+            g_projectDashboardState = UI_DASHBOARD_SETUP;
+        }
+        break;
     default:
         break;
     }

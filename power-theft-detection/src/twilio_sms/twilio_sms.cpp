@@ -14,7 +14,6 @@ static String Latitude = "14.5716272";
 static String Longtitude = "120.995249";
 static String Address = " 2087 A-Smith Malate, Manila";
 
-
 void initTwilio( void )
 {
     twilio = new Twilio(account_sid, auth_token);
@@ -48,14 +47,27 @@ bool sendPowerTheftDetected( void )
 
     Serial.println(smsMessage);
 
-    // TODO: Add send to monitoring station number
     success = twilio->send_message(g_homeOwnerContactNumber, from_number, smsMessage, response);
     
-    if (success) {
-    Serial.println("Sent message successfully!");
-    } else {
-    Serial.println(response);
+    if (success)
+    {
+        Serial.println("Sent message successfully!");
+    } 
+    else 
+    {
+        Serial.println(response);
     }
+
+    success = twilio->send_message(g_basteStationContactNumber, from_number, smsMessage, response);
+    if (success) 
+    {
+        Serial.println("Sent message successfully!");
+    } 
+    else 
+    {
+        Serial.println(response);
+    }
+
     return success;
 }
 
@@ -77,7 +89,6 @@ bool sendHouseIntruder( void )
     return success;
 }
 
-
 bool sendFireDetected( void )
 {
     String smsMessage = "WARNING! FIRE DETECTED AT " + g_homeOwnerAddress + ". Google Map Location: ";
@@ -87,15 +98,26 @@ bool sendFireDetected( void )
     bool success;
 
     Serial.println(smsMessage);
-
-    // TODO: Add send to fire department or monitoring station
-    success = twilio->send_message(g_homeOwnerContactNumber, from_number, smsMessage, response);
     
-    if (success) {
-    Serial.println("Sent message successfully!");
-    } else {
-    Serial.println(response);
+    success = twilio->send_message(g_homeOwnerContactNumber, from_number, smsMessage, response);
+    if (success) 
+    {
+        Serial.println("Sent message successfully!");
+    } 
+    else 
+    {
+        Serial.println(response);
     }
+
+    success = twilio->send_message(g_basteStationContactNumber, from_number, smsMessage, response);
+    if (success) 
+    {
+        Serial.println("Sent message successfully!");
+    } 
+    else 
+    {
+        Serial.println(response);
+    }
+
     return success;
-    return 0;
 }

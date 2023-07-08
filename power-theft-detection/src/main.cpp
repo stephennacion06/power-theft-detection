@@ -37,7 +37,6 @@ void setup(void)
 
   if(!wifiRes) 
   {
-      // TODO: Display Text Failed to connect restarting
       displaySetupConnectToWifiFailed();
       delay(UI_SETUP_DELAY_TEXT);
       ESP.restart();
@@ -45,7 +44,7 @@ void setup(void)
   else 
   {
       //if you get here you have connected to the WiFi    
-      // TODO: Display Text Succesfully connected
+
       displaySetupConnectToWifiPassed();
       delay(UI_SETUP_DELAY_TEXT);
       
@@ -65,14 +64,17 @@ void setup(void)
   }
 
   bool successUpdate = false;
-  // TODO: update ui to extracting information from Thingspeak
+  
   displayThingspeakExtraction();
   delay(UI_SETUP_DELAY_TEXT);
+  
   while ( false == successUpdate )
   {
     successUpdate = updateHomeOwnerInformation( g_customerChannelID );
   }
+  
   displayThingspeakExtractionInformation();
+  delay(UI_SETUP_DELAY_TEXT);
 }
 
 void loop() 

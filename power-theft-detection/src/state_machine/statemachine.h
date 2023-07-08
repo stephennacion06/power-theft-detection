@@ -4,6 +4,14 @@
 #define DONE_SET_VALUE 99
 #define MAXIMUM_CHANNEL_ID_NUMBER 7
 
+typedef enum enumUIDashboard
+{
+    BLANK_ERROR_MESSAGE,
+    POWER_THEFT_DETECTED_UI,
+    POWER_THEFT_DETECTED_PROCEED,
+    FIRE_DETECTED_UI
+} UIDashboardError;
+
 // Enumerated type for the states
 typedef enum {
     NOT_USED,
@@ -18,7 +26,9 @@ typedef enum {
 
 typedef enum {
     UI_DASHBOARD_SETUP,
-    UI_DASHBOARD_LOOP
+    UI_DASHBOARD_LOOP,
+    UI_DASHBOARD_POWER_THEFT_DETECTED_SETUP,
+    UI_DASHBOARD_POWER_THEFT_DETECTED_LOOP,
 } UIdashboardState;
 
 typedef enum {

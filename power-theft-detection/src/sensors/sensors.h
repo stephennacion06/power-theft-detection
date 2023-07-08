@@ -26,6 +26,6 @@ bool fireSensorValue( void );
 
 // Power Theft Detection
 void powerTheftDetectionSetup( void );
-void powerTheftDetection( float wattage );
+bool powerTheftDetection( float wattage );
 
 #endif // SENSORS_H

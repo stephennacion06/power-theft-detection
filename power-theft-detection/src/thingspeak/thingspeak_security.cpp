@@ -4,18 +4,22 @@
 #include <ArduinoJson.h>
 #include "thingspeak_security.h"
 #include "credentials/credentials.h"
+#include "state_machine/statemachine.h"
 #include "ThingSpeak.h"
+#include <EEPROM.h>
 
 WiFiClient  client;
 
 uint32_t g_homeOwnerWattageMax = 0;
 String  g_homeOwnerAddress;
 String  g_homeOwnerContactNumber;
+String  g_basteStationContactNumber;
 
 String g_homeOwnerLatitude;
 String g_homeOwnerLongtitude;
 
 static void extractParameters( String inputString );
+static int readFlashChannelID( void );
 
 bool updateHomeOwnerInformation( const uint32_t targetChannelId )
 {
@@ -82,29 +86,70 @@ bool updateHomeOwnerInformation( const uint32_t targetChannelId )
   return returnStatus;
 }
 
-bool thingSpeakSetup( void )
+void thingSpeakSetup( void )
 {
   ThingSpeak.begin(client);  // Initialize ThingSpeak
 }
 
-void thingSpeakTransmit( float wattage, bool fireDetected, bool fireTheftDetect )
+void thingSpeakTransmit( float wattage, bool fireStatus, bool powerTheftStatus )
 {
-  ThingSpeak.setField(1, wattage);
-  ThingSpeak.setField(2, fireDetected);
-  ThingSpeak.setField(5, fireTheftDetect);
+  int homeOnwerChannelID = readFlashChannelID();
 
-  // TODO: Send Status and Insert Channel Number and API keys
-  // set the status 
-  // ThingSpeak.setStatus(myStatus);
+  ThingSpeak.setField(THINGSPEAK_WATTAGE_CHANNEL, wattage);
+  ThingSpeak.setField(THINGPSEAK_FIRE_DETECTION_CHANNEL, fireStatus);
+  ThingSpeak.setField(THINGSPEAK_POWER_DETECTION_CHANNEL, powerTheftStatus);
+
+  if( fireStatus )
+  {
+    ThingSpeak.setStatus("FIRE DETECTED!");
+  }
   
-  // write to the ThingSpeak channel
-  // int x = ThingSpeak.writeFields(myChannelNumber, WRITE_API_KEY);
-  // if(x == 200){
-  //   Serial.println("Channel update successful.");
-  // }
-  // else{
-  //   Serial.println("Problem updating channel. HTTP error code " + String(x));
-  // }
+  if ( powerTheftStatus )
+  {
+    ThingSpeak.setStatus("POWER THEFT DETECTED!");
+  }
+
+  int x = ThingSpeak.writeFields(homeOnwerChannelID, WRITE_API_KEY);
+  if(x == 200){
+    Serial.println("Channel update successful.");
+  }
+  else{
+    Serial.println("Problem updating channel. HTTP error code " + String(x));
+  }
+}
+
+void thingSpeakTransmitFireDetected( void )
+{
+    int homeOnwerChannelID = readFlashChannelID();
+    
+    ThingSpeak.setField(THINGPSEAK_FIRE_DETECTION_CHANNEL, 1);
+
+    ThingSpeak.setStatus("FIRE DETECTED!");
+
+    int x = ThingSpeak.writeFields(homeOnwerChannelID, WRITE_API_KEY);
+    if(x == 200){
+      Serial.println("Channel update successful.");
+    }
+    else{
+      Serial.println("Problem updating channel. HTTP error code " + String(x));
+    }
+}
+
+void thingSpeakTransmitPowerTheftDetected( void )
+{
+    int homeOnwerChannelID = readFlashChannelID();
+    
+    ThingSpeak.setField(THINGSPEAK_POWER_DETECTION_CHANNEL, 1);
+
+    ThingSpeak.setStatus("POWER THEFT DETECTED!");
+
+    int x = ThingSpeak.writeFields(homeOnwerChannelID, WRITE_API_KEY);
+    if(x == 200){
+      Serial.println("Channel update successful.");
+    }
+    else{
+      Serial.println("Problem updating channel. HTTP error code " + String(x));
+    }
 }
 
 static void extractParameters( String inputString )
@@ -124,19 +169,34 @@ static void extractParameters( String inputString )
     endIndex = inputString.indexOf(";", startIndex);  // Find the ending index
     String address = inputString.substring(startIndex, endIndex);  // Extract the address
 
+    // Extract address
+    startIndex = inputString.indexOf(":", endIndex) + 2;  // Find the starting index
+    endIndex = inputString.indexOf(";", startIndex);  // Find the ending index
+    String baseStationNumber = inputString.substring(startIndex, endIndex);  // Extract the address
     // Trim whitespace
     wattage.trim();
     contactNumber.trim();
     address.trim();
+    baseStationNumber.trim();
 
     g_homeOwnerWattageMax = wattage.toInt();
     g_homeOwnerAddress = address;
     g_homeOwnerContactNumber = contactNumber;
-
+    g_basteStationContactNumber = baseStationNumber;
 
     // Print the extracted parameters
     Serial.println("Maximum Wattage Use(W): " + String(g_homeOwnerWattageMax));
     Serial.println("Contact Number: " + g_homeOwnerContactNumber);
     Serial.println("Address: " + g_homeOwnerAddress);
-    
+    Serial.println("Base Station Number: " + g_basteStationContactNumber);
+}
+
+static int readFlashChannelID( void ) 
+{
+    int value = 0;
+    for (int i = MAXIMUM_CHANNEL_ID_NUMBER -1; i >= 0; i--) {
+    byte digit = EEPROM.read(i);
+    value = value * 10 + digit;
+    }
+    return value;
 }

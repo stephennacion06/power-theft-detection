@@ -16,10 +16,12 @@ static MeterWidget   wattageWidget  = MeterWidget(&tft);
 static ButtonWidget lockSensorButton = ButtonWidget(&tft);
 static ButtonWidget motionSensorButton = ButtonWidget(&tft);
 static ButtonWidget FireSensorButton = ButtonWidget(&tft);
+static ButtonWidget powerTheftButton = ButtonWidget(&tft);
 
 // Dashboard
 static unsigned long updateTime = 0;  
 static unsigned long updateTimeStatus = 0;
+static unsigned long transmitTime = 0;
 
 // Button Widget
 static bool doorButtonIsEnanbled = false;
@@ -80,6 +82,7 @@ static void buttonWidgetSetup( void );
 static void lockSensorButtonPressAction(void);
 static void motionSensorButtonPressAction(void);
 static void fireSensorButtonPressAction(void);
+static void powerTheftButtonPressAction(void);
 static void lockSensorButtonReleaseAction(void);
 static void motionSensorButtonReleaseAction(void);
 static void fireSensorButtonReleaseAction(void);
@@ -89,7 +92,7 @@ static void statusMotionSetup(void);
 static void statusFireSetup(void);
 static void updateStatusDoorSetup(void);
 static void updateStatusMotionSetup(void);
-static void updateStatusFireSetup(void);
+static bool updateStatusFireSetup(void);
 /* -------------------- Public Function Definition -------------------------------- */
 void initTFT( void )
 {
@@ -172,12 +175,14 @@ void displayThingspeakExtractionInformation( void )
     tft.print(g_homeOwnerWattageMax);
     tft.println("W");
 
-
     tft.print("Home Address: ");
     tft.println(g_homeOwnerAddress);
 
     tft.print("Contact Number: ");
     tft.println(g_homeOwnerContactNumber);
+
+    tft.print("Base Station Number: ");
+    tft.println(g_basteStationContactNumber);
 
 }
 
@@ -324,7 +329,6 @@ void uiSetupDisplayKeypadLoop( void )
 
       if (b == 2) {
         // NOTE: SEND BUTTON HANDLER
-        // TODO: Add checking here if input value is a valid number; Status invalid number if not
         int converterNumber = std::stoi(numberBuffer);
 
         if (converterNumber >= validNumberMin && converterNumber <= validNumberMax)
@@ -379,6 +383,10 @@ void saveToFlashChannelID(int value)
 
 void dashboardSetup( void )
 {
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_YELLOW); tft.setTextFont(2);
+  tft.setTextSize(1);
+
   thingSpeakSetup();
 
   touch_calibrate();
@@ -399,11 +407,14 @@ void dashboardSetup( void )
   powerTheftDetectionSetup();
 }
 
-void dashboardLoop( void )
+int dashboardLoop( void )
 {
+  int errorMessage = (UIDashboardError) BLANK_ERROR_MESSAGE;
   float current = getCurrent();
   float voltage = getVoltage();
   float wattage = 0;
+  bool powerTheftStatus = false;
+  bool fireDetectedStatus = false;
 
   touchscreencheck();
 
@@ -412,8 +423,7 @@ void dashboardLoop( void )
     updateTimeStatus = millis();
     updateStatusDoorSetup();
     updateStatusMotionSetup();
-    updateStatusFireSetup();
-
+    fireDetectedStatus = updateStatusFireSetup();
   }
 
 
@@ -423,24 +433,66 @@ void dashboardLoop( void )
     
     wattage = current*voltage;
 
+    powerTheftStatus = powerTheftDetection( wattage );
+    
     wattageWidget.updateNeedle( wattage, 0 );
-
-    powerTheftDetection( wattage );
   }
 
-  // TODO: Transmit Time every 1 minute
+  if (millis() - transmitTime >= THINGSPEAK_TRANSMIT_INTERVAL) 
+  {
+    transmitTime = millis();
+    thingSpeakTransmit( wattage, fireDetectedStatus, powerTheftStatus );
+  }
+
+  if (powerTheftStatus)
+  {
+      digitalWrite(RELAY_PIN, LOW);
+
+      errorMessage = (UIDashboardError) POWER_THEFT_DETECTED_UI;
+  }
+  return  errorMessage;
 }
 
-void dashboardPowerTheftDisplay( void )
+// TODO: POWERTHEFT DISPLAY
+int dashboardPowerTheftDisplay( void )
 {
+  int returnVal = (UIDashboardError) BLANK_ERROR_MESSAGE;
+  uint16_t t_x = 0, t_y = 0;
 
+  bool pressed = tft.getTouch(&t_x, &t_y);
+
+  if( pressed && powerTheftButton.contains(t_x, t_y))
+  {
+    returnVal = (UIDashboardError) POWER_THEFT_DETECTED_PROCEED;
+  }
+  delay( 50 );
+
+  return returnVal;
+}
+
+void dashBoardPowerTheftDetectedSetup( void )
+{
+    tft.setCursor(tft.width()/2 - 100, tft.height()/2 - 100);
+    tft.fillScreen(TFT_BLACK);
+    tft.setTextColor(TFT_YELLOW); tft.setTextFont(2);
+    tft.setTextSize(2);
+    tft.println(" POWER THEFT");
+    tft.println("    DETECTED!");
+
+    powerTheftButton.initButton(tft.width() / 2 , tft.height() / 2, BUTTON_W, BUTTON_H, TFT_WHITE, TFT_BLACK, TFT_GREEN, "PROCEED ", 1);
+    powerTheftButton.setPressAction(powerTheftButtonPressAction);
+    powerTheftButton.drawSmoothButton(false, 3, TFT_BLACK); // 3 is outline width, TFT_BLACK is the surrounding background colour for anti-aliasing
+
+    thingSpeakTransmitPowerTheftDetected();
+    sendPowerTheftDetected();
 }
 
 /* -------------------- Private Function Definition -------------------------------- */
 static void drawKeypad( void )
 {
   // Draw the keys
-  for (uint8_t row = 0; row < 5; row++) {
+  for (uint8_t row = 0; row < 5; row++)
+  {
     for (uint8_t col = 0; col < 3; col++) {
       uint8_t b = col + row * 3;
 
@@ -550,6 +602,11 @@ static void fireSensorButtonPressAction(void)
 
     FireSensorButton.setPressTime(millis());
   }
+}
+
+static void powerTheftButtonPressAction(void)
+{
+
 }
 
 static void lockSensorButtonReleaseAction(void)
@@ -691,8 +748,9 @@ static void updateStatusMotionSetup(void)
   }
 }
 
-static void updateStatusFireSetup(void)
+static bool updateStatusFireSetup(void)
 {
+  bool fireDetectedStatus = false;
   tft.setCursor(STATUS_X_POSITION, FIRE_STATUS_Y, 1);
   tft.setTextSize(1);
 
@@ -703,16 +761,18 @@ static void updateStatusFireSetup(void)
       if ( !fireSensorValue() )
       {
         tft.setTextColor(TFT_SKYBLUE,TFT_BLACK,true);
-        tft.println("FIRE SENSOR ENABLED  ");
+        tft.println("FIRE SENSOR ENABLED   ");
       }
       else
       {
         tft.setTextColor(TFT_RED,TFT_BLACK,true);
-        tft.println("FIRE SENSOR ACTIVATED");
+        tft.println("FIRE SENSOR ACTIVATED!");
         if ( millis() - fireTwillioMillis >= UPDATE_TWILLIO_TIME ) 
         {
-          fireTwillioMillis = millis();
+          thingSpeakTransmitFireDetected();
           sendFireDetected();
+          fireTwillioMillis = millis();
+          fireDetectedStatus = true;
         }
       }
     }
@@ -727,4 +787,5 @@ static void updateStatusFireSetup(void)
     tft.setTextColor(TFT_GREEN,TFT_BLACK,true); 
     tft.println("FIRE SENSOR DISABLED ");
   }
+  return fireDetectedStatus;
 }

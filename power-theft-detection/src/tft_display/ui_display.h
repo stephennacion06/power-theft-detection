@@ -9,10 +9,12 @@
 
 #define DASHBOARD_LOOP_PERIOD 1000 // Display updates every 1 second
 
+#define THINGSPEAK_TRANSMIT_INTERVAL 30000 // Transmist every 30 seconds
+
 #define DASHBOARD_STATUS_LOOP_PERIOD 50 // Display updates every 1 second
 
 #include "FS.h"
-
+#include "state_machine/statemachine.h"
 #include <SPI.h>
 #include <TFT_eSPI.h>      // Hardware-specific library
 
@@ -69,7 +71,8 @@ void saveToFlashChannelID(int value);
 
 //Dashboard Public Function
 void dashboardSetup( void );
-void dashboardLoop( void );
-void dashboardPowerTheftDisplay( void );
+int dashboardLoop( void );
+int dashboardPowerTheftDisplay( void );
+void dashBoardPowerTheftDetectedSetup( void );
 
 #endif  // UI_DISPLAY_H
