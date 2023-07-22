@@ -1,6 +1,7 @@
 #include "twilio_sms.h"
 #include "credentials/credentials.h"
 #include "thingspeak/thingspeak_security.h"
+#include "debug_serial.h"
 
 // Values from Twilio (find them on the dashboard)
 const char *account_sid = ACCOUNT_SSID_TWILLIO;
@@ -28,9 +29,9 @@ bool sendInitMessage( void )
     success = twilio->send_message(g_homeOwnerContactNumber, from_number, smsMessage, response);
     
     if (success) {
-    Serial.println("Sent message successfully!");
+    DEBUG_PRINT_LN("Sent message successfully!");
     } else {
-    Serial.println(response);
+    DEBUG_PRINT_LN(response);
     }
 
     return success;
@@ -45,27 +46,27 @@ bool sendPowerTheftDetected( void )
     String response;
     bool success;
 
-    Serial.println(smsMessage);
+    DEBUG_PRINT_LN(smsMessage);
 
     success = twilio->send_message(g_homeOwnerContactNumber, from_number, smsMessage, response);
     
     if (success)
     {
-        Serial.println("Sent message successfully!");
+        DEBUG_PRINT_LN("Sent message successfully!");
     } 
     else 
     {
-        Serial.println(response);
+        DEBUG_PRINT_LN(response);
     }
 
     success = twilio->send_message(g_basteStationContactNumber, from_number, smsMessage, response);
     if (success) 
     {
-        Serial.println("Sent message successfully!");
+        DEBUG_PRINT_LN("Sent message successfully!");
     } 
     else 
     {
-        Serial.println(response);
+        DEBUG_PRINT_LN(response);
     }
 
     return success;
@@ -77,14 +78,14 @@ bool sendHouseIntruder( void )
     String response;
     bool success;
 
-    Serial.println(smsMessage);
+    DEBUG_PRINT_LN(smsMessage);
 
     success = twilio->send_message(g_homeOwnerContactNumber, from_number, smsMessage, response);
     
     if (success) {
-    Serial.println("Sent message successfully!");
+    DEBUG_PRINT_LN("Sent message successfully!");
     } else {
-    Serial.println(response);
+    DEBUG_PRINT_LN(response);
     }
     return success;
 }
@@ -97,26 +98,26 @@ bool sendFireDetected( void )
     String response;
     bool success;
 
-    Serial.println(smsMessage);
+    DEBUG_PRINT_LN(smsMessage);
     
     success = twilio->send_message(g_homeOwnerContactNumber, from_number, smsMessage, response);
     if (success) 
     {
-        Serial.println("Sent message successfully!");
+        DEBUG_PRINT_LN("Sent message successfully!");
     } 
     else 
     {
-        Serial.println(response);
+        DEBUG_PRINT_LN(response);
     }
 
     success = twilio->send_message(g_basteStationContactNumber, from_number, smsMessage, response);
     if (success) 
     {
-        Serial.println("Sent message successfully!");
+        DEBUG_PRINT_LN("Sent message successfully!");
     } 
     else 
     {
-        Serial.println(response);
+        DEBUG_PRINT_LN(response);
     }
 
     return success;

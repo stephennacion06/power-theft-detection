@@ -2,6 +2,7 @@
 #include "statemachine.h"
 #include "tft_display/ui_display.h"
 #include <EEPROM.h>
+#include "debug_serial.h"
 
 uint32_t g_customerChannelID = 0;
 
@@ -20,21 +21,21 @@ void setupFlow( void )
         displaySetupText();
         delay( UI_SETUP_DELAY_TEXT );
         g_projectCurrentSetupState = UI_HOME_SECURITY_SETUP_TOUCH_CALIBRATION;
-        Serial.println("Displaying UI_HOME_SECURITY_SETUP_TEXT");
+        DEBUG_PRINT_LN("Displaying UI_HOME_SECURITY_SETUP_TEXT");
         break;
     
     case UI_HOME_SECURITY_SETUP_CHANNEL_ID_TEXT:
         displaySetupTextInsertChannelID();
         delay( UI_SETUP_DELAY_TEXT );
         g_projectCurrentSetupState = UI_HOME_SECURITY_SETUP_CHANNEL_ID_KEYPAD;
-        Serial.println("Displaying UI_HOME_SECURITY_SETUP_CHANNEL_ID_TEXT");
+        DEBUG_PRINT_LN("Displaying UI_HOME_SECURITY_SETUP_CHANNEL_ID_TEXT");
         break;
     
     case UI_HOME_SECURITY_SETUP_TOUCH_CALIBRATION:
         touch_calibrate();
         delay( UI_SETUP_DELAY_TEXT );
         g_projectCurrentSetupState = UI_HOME_SECURITY_SETUP_CHANNEL_ID_TEXT;
-        Serial.println("Displaying UI_HOME_SECURITY_SETUP_TOUCH_CALIBRATION ");
+        DEBUG_PRINT_LN("Displaying UI_HOME_SECURITY_SETUP_TOUCH_CALIBRATION ");
         break;
 
     case UI_HOME_SECURITY_SETUP_CHANNEL_ID_KEYPAD:
@@ -48,8 +49,8 @@ void setupFlow( void )
         setFlag = EEPROM.read(MAXIMUM_CHANNEL_ID_NUMBER);
         if ( ( g_customerChannelID >= validNumberMin && g_customerChannelID <= validNumberMax ) &&  ( DONE_SET_VALUE == setFlag ) )
         {
-            Serial.println(g_customerChannelID);
-            Serial.println(setFlag);
+            DEBUG_PRINT_LN(g_customerChannelID);
+            DEBUG_PRINT_LN(setFlag);
             g_projectCurrentSetupState = UI_HOME_SECUIRTY_SETUP_DONE_SETUP;
             EEPROM.end();
         }

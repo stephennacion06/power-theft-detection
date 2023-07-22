@@ -10,6 +10,7 @@
 #include "sensors/sensors.h"
 #include "Free_Fonts.h" // Include the header file attached to this sketch
 #include <Ticker.h>
+#include "debug_serial.h"
 
 static TFT_eSPI tft = TFT_eSPI();  // Invoke library
 static MeterWidget   wattageWidget  = MeterWidget(&tft);
@@ -35,6 +36,7 @@ static unsigned long motionTwillioMillis = 0;
 static unsigned long fireTwillioMillis = 0;
 #define UPDATE_STATUS_TIME 60000 // 1 minute
 #define UPDATE_TWILLIO_TIME 60000 // 1 minute
+#define TOUCHSCREEN_CHECK_INTERVAL 5
 
 #define BUTTON_W 100
 #define BUTTON_H 50
@@ -204,14 +206,14 @@ void touch_calibrate( void )
 
   // check file system exists
   if (!SPIFFS.begin()) {
-    Serial.println("Formating file system");
+    DEBUG_PRINT_LN("Formating file system");
     SPIFFS.format();
     SPIFFS.begin();
   }
 
   // check if calibration file exists and size is correct
   if (SPIFFS.exists(CALIBRATION_FILE)) {
-    Serial.println("[DEBUG]: Calibration File Exist file");
+    DEBUG_PRINT_LN("[DEBUG]: Calibration File Exist file");
     if (REPEAT_CAL)
     {
       // Delete if we want to re-calibrate
@@ -231,7 +233,7 @@ void touch_calibrate( void )
   if (calDataOK && !REPEAT_CAL) {
     // calibration data valid
     tft.setTouch(calData);
-    Serial.println("[DEBUG]: Calibration data Valid");
+    DEBUG_PRINT_LN("[DEBUG]: Calibration data Valid");
   } else {
     // data not valid so recalibrate
     tft.fillScreen(TFT_BLACK);
@@ -334,7 +336,7 @@ void uiSetupDisplayKeypadLoop( void )
         if (converterNumber >= validNumberMin && converterNumber <= validNumberMax)
         {
           status("Setting Client Channel ID");
-          Serial.println("[DEBUG] ConverterNumber Value: " + String(converterNumber));
+          DEBUG_PRINT_LN("[DEBUG] ConverterNumber Value: " + String(converterNumber));
           // Update flag address MAXIMUM_CHANNEL_ID_NUMBER
           
           EEPROM.write(MAXIMUM_CHANNEL_ID_NUMBER, DONE_SET_VALUE);;
@@ -387,6 +389,11 @@ void dashboardSetup( void )
   tft.setTextColor(TFT_YELLOW); tft.setTextFont(2);
   tft.setTextSize(1);
 
+  DEBUG_PRINT_LN("Setting Current Sensor");
+  currentSensorSetup();
+  DEBUG_PRINT_LN("Setting Voltage Sensor");
+  voltageSensorSetup();
+  
   thingSpeakSetup();
 
   touch_calibrate();
@@ -397,8 +404,6 @@ void dashboardSetup( void )
   statusDoorSetup();
   statusMotionSetup();
 
-  currentSensorSetup();
-  voltageSensorSetup();
   
   pinMode(DOOR_SENSOR_PIN, INPUT);  // Set the specified pin as input
   pinMode(FIRE_SENSOR_PIN, INPUT);  // Set the specified pin as input
@@ -410,11 +415,14 @@ void dashboardSetup( void )
 int dashboardLoop( void )
 {
   int errorMessage = (UIDashboardError) BLANK_ERROR_MESSAGE;
-  float current = getCurrent();
-  float voltage = getVoltage();
   float wattage = 0;
   bool powerTheftStatus = false;
   bool fireDetectedStatus = false;
+  float current = 0;
+  float voltage = 0;
+  
+  current = getCurrent();
+  voltage = getVoltage();
 
   touchscreencheck();
 
@@ -425,7 +433,6 @@ int dashboardLoop( void )
     updateStatusMotionSetup();
     fireDetectedStatus = updateStatusFireSetup();
   }
-
 
   if (millis() - updateTime >= DASHBOARD_LOOP_PERIOD) 
   {
@@ -628,24 +635,23 @@ static void touchscreencheck(void)
 {
   static uint32_t scanTime = millis();
   uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
-  // Pressed will be set true if there is a valid touch on the screen
-  if (millis() - scanTime >= 25)
-  {
-
   bool pressed = tft.getTouch(&t_x, &t_y);
-  scanTime = millis();
-  for (uint8_t b = 0; b < buttonCount; b++)
+  if (millis() - scanTime >= TOUCHSCREEN_CHECK_INTERVAL )
   {
-    if( pressed && btn[b]->contains(t_x, t_y))
+    scanTime = millis();
+
+    for (uint8_t b = 0; b < buttonCount; b++)
     {
-      btn[b]->press(true);
-      btn[b]->pressAction();
-    }     
-    else
-    {
-      btn[b]->press(false);
+      if( pressed && btn[b]->contains(t_x, t_y))
+      {
+        btn[b]->press(true);
+        btn[b]->pressAction();
+      }     
+      else
+      {
+        btn[b]->press(false);
+      }
     }
-  }
   }
 }
 

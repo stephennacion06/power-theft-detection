@@ -7,6 +7,7 @@
 #include <Adafruit_I2CDevice.h>
 #include <EEPROM.h>
 #include <WiFiManager.h>
+#include "debug_serial.h"
 
 #define EEPROM_SIZE 12
 #define DONE_SET_VALUE 99
@@ -31,7 +32,7 @@ void setup(void)
   // NOTE: reset settings - wipe stored credentials for testing
   //wm.resetSettings();
 
-  Serial.println("Starting to Connect");
+  DEBUG_PRINT_LN("Starting to Connect");
   displaySetupConnectToWifi();
   wifiRes = wm.autoConnect("HomeSecurity Setup","password"); // password protected ap
 

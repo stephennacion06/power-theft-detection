@@ -7,6 +7,7 @@
 #include "state_machine/statemachine.h"
 #include "ThingSpeak.h"
 #include <EEPROM.h>
+#include "debug_serial.h"
 
 WiFiClient  client;
 
@@ -24,7 +25,7 @@ static int readFlashChannelID( void );
 bool updateHomeOwnerInformation( const uint32_t targetChannelId )
 {
 
-    Serial.println(targetChannelId);
+    DEBUG_PRINT_LN(targetChannelId);
     bool returnStatus = false;
 
     String url = "https://api.thingspeak.com/channels.json?api_key=" + String(SECRET_WRITE_APIKEY);
@@ -36,15 +37,15 @@ bool updateHomeOwnerInformation( const uint32_t targetChannelId )
 
   if (httpResponseCode == HTTP_CODE_OK) {
     String response = http.getString();
-    Serial.println("Response: " + response);
+    DEBUG_PRINT_LN("Response: " + response);
 
     // Parse the JSON response
     DynamicJsonDocument doc(1024);
     DeserializationError error = deserializeJson(doc, response);
 
     if (error) {
-      Serial.print("JSON Parsing Error: ");
-      Serial.println(error.c_str());
+      DEBUG_PRINT("JSON Parsing Error: ");
+      DEBUG_PRINT_LN(error.c_str());
       return returnStatus;
     }
 
@@ -63,24 +64,24 @@ bool updateHomeOwnerInformation( const uint32_t targetChannelId )
         g_homeOwnerLongtitude = channel["longitude"].as<String>();
 
         // Print the channel details
-        Serial.print("Channel ID: ");
-        Serial.println(channelId);
-        Serial.print("Channel Name: ");
-        Serial.println(channelName);
-        Serial.print("Channel Description: ");
-        Serial.println(channelDescription);
-        Serial.print("Latitude: ");
-        Serial.println(g_homeOwnerLatitude);
-        Serial.print("Longtitude: ");
-        Serial.println(g_homeOwnerLongtitude);
-        Serial.println("--------Extract Information -----");
+        DEBUG_PRINT("Channel ID: ");
+        DEBUG_PRINT_LN(channelId);
+        DEBUG_PRINT("Channel Name: ");
+        DEBUG_PRINT_LN(channelName);
+        DEBUG_PRINT("Channel Description: ");
+        DEBUG_PRINT_LN(channelDescription);
+        DEBUG_PRINT("Latitude: ");
+        DEBUG_PRINT_LN(g_homeOwnerLatitude);
+        DEBUG_PRINT("Longtitude: ");
+        DEBUG_PRINT_LN(g_homeOwnerLongtitude);
+        DEBUG_PRINT_LN("--------Extract Information -----");
         extractParameters(channelDescription);
         returnStatus = true;
         }
     }
   } else {
-    Serial.print("HTTP Request Error: ");
-    Serial.println(httpResponseCode);
+    DEBUG_PRINT("HTTP Request Error: ");
+    DEBUG_PRINT_LN(httpResponseCode);
   }
 
   return returnStatus;
@@ -111,10 +112,10 @@ void thingSpeakTransmit( float wattage, bool fireStatus, bool powerTheftStatus )
 
   int x = ThingSpeak.writeFields(homeOnwerChannelID, WRITE_API_KEY);
   if(x == 200){
-    Serial.println("Channel update successful.");
+    DEBUG_PRINT_LN("Channel update successful.");
   }
   else{
-    Serial.println("Problem updating channel. HTTP error code " + String(x));
+    DEBUG_PRINT_LN("Problem updating channel. HTTP error code " + String(x));
   }
 }
 
@@ -128,10 +129,10 @@ void thingSpeakTransmitFireDetected( void )
 
     int x = ThingSpeak.writeFields(homeOnwerChannelID, WRITE_API_KEY);
     if(x == 200){
-      Serial.println("Channel update successful.");
+      DEBUG_PRINT_LN("Channel update successful.");
     }
     else{
-      Serial.println("Problem updating channel. HTTP error code " + String(x));
+      DEBUG_PRINT_LN("Problem updating channel. HTTP error code " + String(x));
     }
 }
 
@@ -145,10 +146,10 @@ void thingSpeakTransmitPowerTheftDetected( void )
 
     int x = ThingSpeak.writeFields(homeOnwerChannelID, WRITE_API_KEY);
     if(x == 200){
-      Serial.println("Channel update successful.");
+      DEBUG_PRINT_LN("Channel update successful.");
     }
     else{
-      Serial.println("Problem updating channel. HTTP error code " + String(x));
+      DEBUG_PRINT_LN("Problem updating channel. HTTP error code " + String(x));
     }
 }
 
@@ -185,10 +186,10 @@ static void extractParameters( String inputString )
     g_basteStationContactNumber = baseStationNumber;
 
     // Print the extracted parameters
-    Serial.println("Maximum Wattage Use(W): " + String(g_homeOwnerWattageMax));
-    Serial.println("Contact Number: " + g_homeOwnerContactNumber);
-    Serial.println("Address: " + g_homeOwnerAddress);
-    Serial.println("Base Station Number: " + g_basteStationContactNumber);
+    DEBUG_PRINT_LN("Maximum Wattage Use(W): " + String(g_homeOwnerWattageMax));
+    DEBUG_PRINT_LN("Contact Number: " + g_homeOwnerContactNumber);
+    DEBUG_PRINT_LN("Address: " + g_homeOwnerAddress);
+    DEBUG_PRINT_LN("Base Station Number: " + g_basteStationContactNumber);
 }
 
 static int readFlashChannelID( void ) 

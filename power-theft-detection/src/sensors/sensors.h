@@ -3,7 +3,7 @@
 
 #define VOLTAGE_PIN A4
 #define DOOR_SENSOR_PIN 26
-#define MOTION_SENSOR_PIN 0
+#define MOTION_SENSOR_PIN 15
 #define FIRE_SENSOR_PIN 25
 #define RELAY_PIN 16
 
