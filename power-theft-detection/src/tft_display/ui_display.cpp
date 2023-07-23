@@ -36,7 +36,7 @@ static unsigned long motionTwillioMillis = 0;
 static unsigned long fireTwillioMillis = 0;
 #define UPDATE_STATUS_TIME 60000 // 1 minute
 #define UPDATE_TWILLIO_TIME 60000 // 1 minute
-#define TOUCHSCREEN_CHECK_INTERVAL 5
+#define TOUCHSCREEN_CHECK_INTERVAL 1
 
 #define BUTTON_W 100
 #define BUTTON_H 50
