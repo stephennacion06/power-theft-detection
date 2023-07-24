@@ -82,18 +82,25 @@ void powerTheftDetectionSetup( void )
     pinMode(RELAY_PIN, OUTPUT);
 }
 
-bool powerTheftDetection( float wattage )
+bool powerTheftDetection( float wattage, bool powerOn )
 {
     bool powerTheftDetected = false;
     
-    if( wattage >= g_homeOwnerWattageMax)
+    if( wattage >= g_homeOwnerWattageMax )
     {
         digitalWrite(RELAY_PIN, LOW);
         powerTheftDetected = true;
     }
     else
     {
-        digitalWrite(RELAY_PIN, HIGH);
+        if ( powerOn )
+        {
+            digitalWrite(RELAY_PIN, HIGH);
+        }
+        else
+        {
+            digitalWrite(RELAY_PIN, LOW);
+        }
     }
     return powerTheftDetected;
 }

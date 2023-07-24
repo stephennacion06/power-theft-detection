@@ -8,6 +8,7 @@
 #include <EEPROM.h>
 #include <WiFiManager.h>
 #include "debug_serial.h"
+#include "sensors/sensors.h"
 
 #define EEPROM_SIZE 12
 #define DONE_SET_VALUE 99
@@ -21,6 +22,10 @@ static int readFlashChannelID( void );
 
 void setup(void) 
 {
+  // Always disable relay during startup
+  pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, LOW);
+
   // Initialize TFT dispaly
   initTFT();
 

@@ -13,10 +13,11 @@
 #include "debug_serial.h"
 
 static TFT_eSPI tft = TFT_eSPI();  // Invoke library
-static MeterWidget   wattageWidget  = MeterWidget(&tft);
+static MeterWidget  wattageWidget  = MeterWidget(&tft);
 static ButtonWidget lockSensorButton = ButtonWidget(&tft);
 static ButtonWidget motionSensorButton = ButtonWidget(&tft);
-static ButtonWidget FireSensorButton = ButtonWidget(&tft);
+static ButtonWidget fireSensorButton = ButtonWidget(&tft);
+static ButtonWidget relayButton = ButtonWidget(&tft);
 static ButtonWidget powerTheftButton = ButtonWidget(&tft);
 
 // Dashboard
@@ -28,6 +29,7 @@ static unsigned long transmitTime = 0;
 static bool doorButtonIsEnanbled = false;
 static bool motionButtonIsEnabled = false;
 static bool fireButtonIsEnabled = false;
+static bool relayButtonIsEnabled = false;
 static unsigned long doorMillis = 0;
 static unsigned long motionMillis = 0;
 static unsigned long fireMillis = 0;
@@ -38,15 +40,21 @@ static unsigned long fireTwillioMillis = 0;
 #define UPDATE_TWILLIO_TIME 60000 // 1 minute
 #define TOUCHSCREEN_CHECK_INTERVAL 1
 
-#define BUTTON_W 100
-#define BUTTON_H 50
-#define STARTING_H 30
+#define BUTTON_W 80
+#define BUTTON_H 42
+#define STARTING_H 60
 #define SPACE_H 5
 
 #define BUTTON_X 0
 #define DOOR_BUTTON_Y   ( ( tft.height() / 2 ) - BUTTON_H + STARTING_H)
 #define MOTION_BUTTON_Y ( ( tft.height() / 2 ) + STARTING_H + SPACE_H )
 #define FIRE_BUTTON_Y   ( ( tft.height() / 2 ) + BUTTON_H + STARTING_H +  ( SPACE_H * 2 ) )
+
+#define RELAY_BUTTON_H 42
+#define RELAY_BUTTON_W 100
+#define RELAY_BUTTON_PADDING_RIGHT 10
+#define RELAY_BUTTON_X  ( ( tft.width() / 2 ) - 45)
+#define RELAY_BUTTON_Y   DOOR_BUTTON_Y - ( SPACE_H + RELAY_BUTTON_H )
 
 // Status
 #define STATUS_X_POSITION BUTTON_W + 5
@@ -56,7 +64,7 @@ static unsigned long fireTwillioMillis = 0;
 
 // Create an array of button instances to use in for() loops
 // This is more useful where large numbers of buttons are employed
-ButtonWidget* btn[] = {&lockSensorButton , &motionSensorButton, &FireSensorButton};;
+ButtonWidget* btn[] = {&lockSensorButton , &motionSensorButton, &fireSensorButton, &relayButton};
 uint8_t buttonCount = sizeof(btn) / sizeof(btn[0]);
 
 // Create 15 keys for the keypad
@@ -88,6 +96,8 @@ static void powerTheftButtonPressAction(void);
 static void lockSensorButtonReleaseAction(void);
 static void motionSensorButtonReleaseAction(void);
 static void fireSensorButtonReleaseAction(void);
+static void relayButtonReleaseAction(void);
+static void relayButtonPressAction(void);
 static void touchscreencheck(void);
 static void statusDoorSetup(void);
 static void statusMotionSetup(void);
@@ -396,6 +406,9 @@ void dashboardSetup( void )
   
   thingSpeakSetup();
 
+  tft.setCursor(STATUS_X_POSITION, FIRE_STATUS_Y, 1);
+  tft.setTextColor(TFT_GREEN,TFT_BLACK,true);  tft.setTextSize(1);
+
   touch_calibrate();
   buttonWidgetSetup();
   wattageWidgetSetup();
@@ -404,7 +417,6 @@ void dashboardSetup( void )
   statusDoorSetup();
   statusMotionSetup();
 
-  
   pinMode(DOOR_SENSOR_PIN, INPUT);  // Set the specified pin as input
   pinMode(FIRE_SENSOR_PIN, INPUT);  // Set the specified pin as input
   pinMode(MOTION_SENSOR_PIN, INPUT); // Set the specified pin as input
@@ -440,7 +452,7 @@ int dashboardLoop( void )
     
     wattage = current*voltage;
 
-    powerTheftStatus = powerTheftDetection( wattage );
+    powerTheftStatus = powerTheftDetection( wattage, relayButtonIsEnabled );
     
     wattageWidget.updateNeedle( wattage, 0 );
   }
@@ -557,16 +569,40 @@ static void buttonWidgetSetup( void )
   motionSensorButton.setReleaseAction(motionSensorButtonReleaseAction);
   motionSensorButton.drawSmoothButton(false, 3, TFT_BLACK); // 3 is outline width, TFT_BLACK is the surrounding background colour for anti-aliasing
 
-  FireSensorButton.initButtonUL(BUTTON_X, FIRE_BUTTON_Y, BUTTON_W, BUTTON_H, TFT_WHITE, TFT_BLACK, TFT_GREEN, " FIRE", 1);
-  FireSensorButton.setPressAction(fireSensorButtonPressAction);
-  FireSensorButton.setReleaseAction(fireSensorButtonReleaseAction);
-  FireSensorButton.drawSmoothButton(false, 3, TFT_BLACK); // 3 is outline width, TFT_BLACK is the surrounding background colour for anti-aliasing
+  fireSensorButton.initButtonUL(BUTTON_X, FIRE_BUTTON_Y, BUTTON_W, BUTTON_H, TFT_WHITE, TFT_BLACK, TFT_GREEN, " FIRE", 1);
+  fireSensorButton.setPressAction(fireSensorButtonPressAction);
+  fireSensorButton.setReleaseAction(fireSensorButtonReleaseAction);
+  fireSensorButton.drawSmoothButton(false, 3, TFT_BLACK); // 3 is outline width, TFT_BLACK is the surrounding background colour for anti-aliasing
 
+  tft.setTextSize(2);
+  relayButton.initButtonUL(RELAY_BUTTON_X, RELAY_BUTTON_Y, RELAY_BUTTON_W, RELAY_BUTTON_H, TFT_WHITE, TFT_BLACK, TFT_GREEN, "POWER OFF", 1);
+  relayButton.setPressAction(relayButtonPressAction);
+  relayButton.setReleaseAction(relayButtonReleaseAction);
+  relayButton.drawSmoothButton(false, 3, TFT_BLACK); // 3 is outline width, TFT_BLACK is the surrounding background colour for anti-aliasing
+
+}
+
+static void relayButtonReleaseAction(void)
+{
+
+}
+
+static void relayButtonPressAction(void)
+{
+  if( relayButton.justPressed() )
+  {
+    tft.setTextSize(2);
+    relayButton.drawSmoothButton(!relayButton.getState(), 3, TFT_BLACK, relayButton.getState() ? "POWER OFF" : "POWER ON ");
+    relayButtonIsEnabled = !relayButtonIsEnabled;
+    relayButton.setPressTime(millis());
+  }
 }
 
 static void lockSensorButtonPressAction(void)
 {
-  if (lockSensorButton.justPressed()) {
+  if (lockSensorButton.justPressed())
+  {
+    tft.setTextSize(1);
     lockSensorButton.drawSmoothButton(!lockSensorButton.getState(), 3, TFT_BLACK, lockSensorButton.getState() ? " DOOR" : " DOOR");
     doorButtonIsEnanbled = !doorButtonIsEnanbled;
     
@@ -581,9 +617,11 @@ static void lockSensorButtonPressAction(void)
 
 static void motionSensorButtonPressAction(void)
 {
-    if (motionSensorButton.justPressed()) {
-    motionSensorButton.drawSmoothButton(!motionSensorButton.getState(), 3, TFT_BLACK, motionSensorButton.getState() ? "MOTION" : "MOTION");
-    motionButtonIsEnabled = !motionButtonIsEnabled;
+    if (motionSensorButton.justPressed())
+    {
+      tft.setTextSize(1);
+      motionSensorButton.drawSmoothButton(!motionSensorButton.getState(), 3, TFT_BLACK, motionSensorButton.getState() ? "MOTION" : "MOTION");
+      motionButtonIsEnabled = !motionButtonIsEnabled;
 
     if( motionButtonIsEnabled )
     {
@@ -596,9 +634,10 @@ static void motionSensorButtonPressAction(void)
 
 static void fireSensorButtonPressAction(void)
 {
-    if (FireSensorButton.justPressed())
+    if (fireSensorButton.justPressed())
     {
-      FireSensorButton.drawSmoothButton(!FireSensorButton.getState(), 3, TFT_BLACK, FireSensorButton.getState() ? " FIRE" : " FIRE");
+      tft.setTextSize(1);
+      fireSensorButton.drawSmoothButton(!fireSensorButton.getState(), 3, TFT_BLACK, fireSensorButton.getState() ? " FIRE" : " FIRE");
     
       fireButtonIsEnabled = !fireButtonIsEnabled;
 
@@ -607,7 +646,7 @@ static void fireSensorButtonPressAction(void)
         fireMillis = millis();
       }
 
-    FireSensorButton.setPressTime(millis());
+    fireSensorButton.setPressTime(millis());
   }
 }
 
