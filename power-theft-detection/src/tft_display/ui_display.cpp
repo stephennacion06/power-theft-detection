@@ -62,6 +62,8 @@ static unsigned long fireTwillioMillis = 0;
 #define MOTION_STATUS_Y ( MOTION_BUTTON_Y + BUTTON_H/2 )
 #define FIRE_STATUS_Y   ( FIRE_BUTTON_Y   + BUTTON_H/2 )
 
+#define CENTER_TEXT_PADDING 30
+
 // Create an array of button instances to use in for() loops
 // This is more useful where large numbers of buttons are employed
 ButtonWidget* btn[] = {&lockSensorButton , &motionSensorButton, &fireSensorButton, &relayButton};
@@ -116,97 +118,91 @@ void initTFT( void )
 void displaySetupTextInsertChannelID( void )
 {
     tft.fillScreen(TFT_BLACK);
-    tft.setCursor(0, (TFT_HEIGHT/2) - 50, 2);
     tft.setTextSize(1);
-  // Set the font colour to be yellow with no background, set to font 7
-    tft.setTextColor(TFT_YELLOW); tft.setTextFont(4);
-    tft.println("    PLEASE INSERT");
-    tft.println("    HOME OWNER");
-    tft.println("    CHANNEL ID");
+    // Set the font colour to be yellow with no background, set to font 7
+    tft.setTextColor(TFT_WHITE); tft.setTextFont(4);
+    tft.setTextDatum(MC_DATUM);
+    tft.drawString("PLEASE INSERT", tft.width()/2,tft.height()/2-CENTER_TEXT_PADDING);
+    tft.drawString("HOME OWNER", tft.width()/2,tft.height()/2);
+    tft.drawString("CHANNEL ID", tft.width()/2,tft.height()/2+CENTER_TEXT_PADDING);
 }
 
 void displaySetupConnectToWifi( void )
 {
     tft.fillScreen(TFT_BLACK);
-    tft.setCursor(0, (TFT_HEIGHT/2) - 50, 2);
     tft.setTextSize(1);
   // Set the font colour to be yellow with no background, set to font 7
-    tft.setTextColor(TFT_YELLOW); tft.setTextFont(4);
-    tft.println("    CONNECTING");
-    tft.println("      TO WIFI");
+    tft.setTextColor(TFT_WHITE); tft.setTextFont(4);
+    tft.setTextDatum(MC_DATUM);
+    tft.drawString("CONNECTING", tft.width()/2,tft.height()/2-CENTER_TEXT_PADDING);
+    tft.drawString("TO", tft.width()/2,tft.height()/2);
+    tft.drawString("WIFI", tft.width()/2,tft.height()/2+CENTER_TEXT_PADDING);
 }
 
 void displaySetupConnectToWifiFailed( void )
 {
     tft.fillScreen(TFT_BLACK);
-    tft.setCursor(0, (TFT_HEIGHT/2) - 50, 2);
     tft.setTextSize(1);
   // Set the font colour to be yellow with no background, set to font 7
-    tft.setTextColor(TFT_YELLOW); tft.setTextFont(4);
-    tft.println("    CONNECTING");
-    tft.println("      TO WIFI");
-    tft.println("      FAILED!");
-    tft.println("    RESTARTING!");
+    tft.setTextColor(TFT_WHITE); tft.setTextFont(4);
+    tft.setTextDatum(MC_DATUM);
+    tft.drawString("CONNECTING", tft.width()/2,tft.height()/2-CENTER_TEXT_PADDING);
+    tft.drawString("TO", tft.width()/2,tft.height()/2);
+    tft.drawString("WIFI", tft.width()/2,tft.height()/2+CENTER_TEXT_PADDING);
+    tft.drawString("FAILED!", tft.width()/2,tft.height()/2+CENTER_TEXT_PADDING*2);
+    tft.drawString("RESTARTING!!", tft.width()/2,tft.height()/2+CENTER_TEXT_PADDING*3);
 }
 
 void displaySetupConnectToWifiPassed( void )
 {
     tft.fillScreen(TFT_BLACK);
-    tft.setCursor(0, (TFT_HEIGHT/2) - 50, 2);
     tft.setTextSize(1);
   // Set the font colour to be yellow with no background, set to font 7
-    tft.setTextColor(TFT_YELLOW); tft.setTextFont(4);
-    tft.println("    CONNECTING");
-    tft.println("      TO WIFI");
-    tft.println("      SUCCESSFUL!");
+    tft.setTextColor(TFT_WHITE); tft.setTextFont(4);
+    tft.setTextDatum(MC_DATUM);
+    tft.drawString("CONNECTING", tft.width()/2,tft.height()/2-CENTER_TEXT_PADDING);
+    tft.drawString("TO", tft.width()/2,tft.height()/2);
+    tft.drawString("WIFI", tft.width()/2,tft.height()/2+CENTER_TEXT_PADDING);
+    tft.drawString("SUCCESFUL!", tft.width()/2,tft.height()/2+CENTER_TEXT_PADDING*2);
 }
 
 void displayThingspeakExtraction( void )
 {
     tft.fillScreen(TFT_BLACK);
-    tft.setCursor(0, (TFT_HEIGHT/2) - 50, 2);
     tft.setTextSize(1);
   // Set the font colour to be yellow with no background, set to font 7
-    tft.setTextColor(TFT_YELLOW); tft.setTextFont(4);
-    tft.println("    GETTING SAVED");
-    tft.println("    HOMEOWNER ");
-    tft.println("    INFORMATION ");
+    tft.setTextColor(TFT_WHITE); tft.setTextFont(4);
+    tft.setTextDatum(MC_DATUM);
+    tft.drawString("LOADING", tft.width()/2,tft.height()/2-CENTER_TEXT_PADDING);
+    tft.drawString("HOMEOWNER", tft.width()/2,tft.height()/2);
+    tft.drawString("INFORMATION...", tft.width()/2,tft.height()/2+CENTER_TEXT_PADDING);
 }
 
 void displayThingspeakExtractionInformation( void )
 {
-    tft.fillScreen(TFT_BLACK);
-    tft.setCursor(0, 0, 2);
-    tft.setTextColor(TFT_YELLOW); tft.setTextFont(2);
-    tft.setTextSize(1);
     // Set the font colour to be yellow with no background, set to font 7
-    
-    
-    tft.println("Home Owner Information");
-    tft.print("Maximum Wattage: ");
-    tft.print(g_homeOwnerWattageMax);
-    tft.println("W");
-
-    tft.print("Home Address: ");
-    tft.println(g_homeOwnerAddress);
-
-    tft.print("Contact Number: ");
-    tft.println(g_homeOwnerContactNumber);
-
-    tft.print("Base Station Number: ");
-    tft.println(g_basteStationContactNumber);
-
+    tft.fillScreen(TFT_BLACK);
+    tft.setTextSize(1);
+  // Set the font colour to be yellow with no background, set to font 7
+    tft.setTextColor(TFT_WHITE); tft.setTextFont(2);
+    tft.setTextDatum(TC_DATUM);
+    tft.drawString("HOME OWNER INFORMATION:",  tft.width()/2, 10);
+    tft.setTextDatum(TL_DATUM);
+    tft.drawString("Maximum Wattage: " + String(g_homeOwnerWattageMax) + "W",  5, CENTER_TEXT_PADDING);
+    tft.drawString("Address: " + String(g_homeOwnerAddress),  5, CENTER_TEXT_PADDING*2);
+    tft.drawString("Contact Number:" + String(g_homeOwnerContactNumber), 5, CENTER_TEXT_PADDING*3);
+    tft.drawString("Station Number:" + String(g_basteStationContactNumber), 5, CENTER_TEXT_PADDING*4);
 }
 
 void displaySetupText( void )
 {
     tft.fillScreen(TFT_BLACK);
-    tft.setCursor(0, (TFT_HEIGHT/2) - 25, 2);
     tft.setTextSize(1);
   // Set the font colour to be yellow with no background, set to font 7
-    tft.setTextColor(TFT_YELLOW); tft.setTextFont(4);
-    tft.println("   HOME SECURITY");
-    tft.println("               SETUP");
+    tft.setTextColor(TFT_WHITE); tft.setTextFont(4);
+    tft.setTextDatum(MC_DATUM);
+    tft.drawString("HOME SECURITY", tft.width()/2,tft.height()/2);
+    tft.drawString("SETUP", tft.width()/2,tft.height()/2 + CENTER_TEXT_PADDING);
 }
 
 void touch_calibrate( void )
@@ -477,7 +473,7 @@ int dashboardPowerTheftDisplay( void )
 {
   int returnVal = (UIDashboardError) BLANK_ERROR_MESSAGE;
   uint16_t t_x = 0, t_y = 0;
-
+  
   bool pressed = tft.getTouch(&t_x, &t_y);
 
   if( pressed && powerTheftButton.contains(t_x, t_y))
@@ -491,6 +487,7 @@ int dashboardPowerTheftDisplay( void )
 
 void dashBoardPowerTheftDetectedSetup( void )
 {
+    relayButtonIsEnabled = false;
     tft.setCursor(tft.width()/2 - 100, tft.height()/2 - 100);
     tft.fillScreen(TFT_BLACK);
     tft.setTextColor(TFT_YELLOW); tft.setTextFont(2);
@@ -763,7 +760,7 @@ static void updateStatusMotionSetup(void)
   {
     if ( ( millis() - motionMillis ) >= UPDATE_STATUS_TIME )
     {
-      if ( motionSensorValue() )
+      if ( !motionSensorValue() )
       {
         tft.setTextColor(TFT_SKYBLUE,TFT_BLACK,true);
         tft.println("MOTION SENSOR ENABLED ");

@@ -37,7 +37,6 @@ bool updateHomeOwnerInformation( const uint32_t targetChannelId )
 
   if (httpResponseCode == HTTP_CODE_OK) {
     String response = http.getString();
-    DEBUG_PRINT_LN("Response: " + response);
 
     // Parse the JSON response
     DynamicJsonDocument doc(1024);

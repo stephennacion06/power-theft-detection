@@ -74,9 +74,12 @@ void setup(void)
   displayThingspeakExtraction();
   delay(UI_SETUP_DELAY_TEXT);
   
-  while ( false == successUpdate )
+  successUpdate = updateHomeOwnerInformation( g_customerChannelID );
+  if( false == successUpdate )
   {
-    successUpdate = updateHomeOwnerInformation( g_customerChannelID );
+    EEPROM.write(MAXIMUM_CHANNEL_ID_NUMBER, 00);
+    EEPROM.commit();
+    ESP.restart();
   }
   
   displayThingspeakExtractionInformation();
