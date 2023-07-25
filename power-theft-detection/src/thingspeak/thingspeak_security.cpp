@@ -174,16 +174,31 @@ static void extractParameters( String inputString )
     startIndex = inputString.indexOf(":", endIndex) + 2;  // Find the starting index
     endIndex = inputString.indexOf(";", startIndex);  // Find the ending index
     String baseStationNumber = inputString.substring(startIndex, endIndex);  // Extract the address
+
+    startIndex = inputString.indexOf(":", endIndex) + 2;  // Find the starting index
+    endIndex = inputString.indexOf(";", startIndex);  // Find the ending index
+    String accountStatus = inputString.substring(startIndex, endIndex);  // Extract the address
+
     // Trim whitespace
     wattage.trim();
     contactNumber.trim();
     address.trim();
     baseStationNumber.trim();
+    accountStatus.trim();
+
+    if ( accountStatus == "Disabled" )
+    {
+        DEBUG_PRINT_LN("Account Disabled Restarting!");
+        EEPROM.write(MAXIMUM_CHANNEL_ID_NUMBER, 00);
+        EEPROM.commit();
+        ESP.restart();
+    }
 
     g_homeOwnerWattageMax = wattage.toInt();
     g_homeOwnerAddress = address;
     g_homeOwnerContactNumber = contactNumber;
     g_basteStationContactNumber = baseStationNumber;
+
 
     // Print the extracted parameters
     DEBUG_PRINT_LN("Maximum Wattage Use(W): " + String(g_homeOwnerWattageMax));
