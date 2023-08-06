@@ -6,12 +6,13 @@
 #include "thingspeak/thingspeak_security.h"
 #include "debug_serial.h"
 
+#define SENSITIVITY_AC_RMS 314.0f
+#define DOOR_SENSOR_ADC_THRESHOLD 100
+#define MOTION_SENSOR_ADC_THRESHOLD 3105
 static Adafruit_ADS1115 ads;
 
 const float FACTOR = 30; //20A/1V from teh CT
 const float multiplier = 0.00008;
-
-#define SENSITIVITY_AC_RMS 314.0f
 
 static ZMPT101B voltageSensor(VOLTAGE_PIN, 60.0);
 static byte getI2cAddress( void );
@@ -64,17 +65,34 @@ float getVoltage( void )
 
 bool doorSensorValue( void )
 {
-    return digitalRead( DOOR_SENSOR_PIN );
+    bool doorActivated = false;
+
+    int analogValue = analogRead(DOOR_SENSOR_PIN);
+
+    if ( analogValue <= DOOR_SENSOR_ADC_THRESHOLD )
+    {
+        doorActivated = true;
+    }
+    
+    return doorActivated;
 }
 
 bool motionSensorValue( void )
 {
-    return digitalRead( MOTION_SENSOR_PIN );
+    bool motionActivated = false;
+
+    int analogValue = analogRead(MOTION_SENSOR_PIN);
+
+    if ( analogValue >= MOTION_SENSOR_ADC_THRESHOLD )
+    {
+        motionActivated = true;
+    }
+    return motionActivated;
 }
 
 bool fireSensorValue( void )
 {
-    return digitalRead( FIRE_SENSOR_PIN );
+    return !digitalRead( FIRE_SENSOR_PIN );
 }
 
 void powerTheftDetectionSetup( void )

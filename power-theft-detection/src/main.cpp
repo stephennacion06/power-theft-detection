@@ -9,9 +9,15 @@
 #include <WiFiManager.h>
 #include "debug_serial.h"
 #include "sensors/sensors.h"
+#include <ESPAsyncWebServer.h>
+#include <AsyncElegantOTA.h>
+#include <WiFi.h>
+#include <AsyncTCP.h>
 
 #define EEPROM_SIZE 12
 #define DONE_SET_VALUE 99
+
+AsyncWebServer server(80);
 
 static bool wifiRes;
 //WiFiManager, Local intialization. Once its business is done, there is no need to keep it around
@@ -19,6 +25,7 @@ static WiFiManager wm;
 
 // NOTE: Run "pio run -t erase" to erase flash memory 
 static int readFlashChannelID( void );
+static void startOTA( void );
 
 void setup(void) 
 {
@@ -30,7 +37,7 @@ void setup(void)
   initTFT();
 
   // Initiialize Serial Communication UART 0
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   EEPROM.begin(EEPROM_SIZE);
   
@@ -49,10 +56,13 @@ void setup(void)
   } 
   else 
   {
-      //if you get here you have connected to the WiFi    
-
       displaySetupConnectToWifiPassed();
       delay(UI_SETUP_DELAY_TEXT);
+
+      // Start OTA webserver
+      startOTA();
+      displayOTAServer( WiFi.localIP().toString() );
+      delay(UI_SETUP_DELAY_TEXT+2500);
       
       int setFlag = EEPROM.read( MAXIMUM_CHANNEL_ID_NUMBER );
       g_customerChannelID = readFlashChannelID();
@@ -99,4 +109,18 @@ static int readFlashChannelID( void )
     value = value * 10 + digit;
     }
     return value;
+}
+
+static void startOTA( void )
+{
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+      request->send(200, "text/plain", "Hi! This is a sample response.");
+    });
+
+    AsyncElegantOTA.begin(&server);    // Start AsyncElegantOTA
+    server.begin();
+    Serial.println("HTTP server started");
 }

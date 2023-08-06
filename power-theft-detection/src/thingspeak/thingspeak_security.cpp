@@ -39,7 +39,7 @@ bool updateHomeOwnerInformation( const uint32_t targetChannelId )
     String response = http.getString();
 
     // Parse the JSON response
-    DynamicJsonDocument doc(1024);
+    DynamicJsonDocument doc(2048);
     DeserializationError error = deserializeJson(doc, response);
 
     if (error) {

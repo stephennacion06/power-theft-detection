@@ -1,7 +1,7 @@
 #ifndef DEBUG_SERIAL_H
 #define DEBUG_SERIAL_H
 
-#define DEBUG_ENABLED 1
+#define DEBUG_ENABLED 0
 
 #if 1  == DEBUG_ENABLED
 #define DEBUG_PRINT(...)     Serial.print(__VA_ARGS__)

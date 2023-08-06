@@ -68,6 +68,7 @@ void displaySetupConnectToWifiPassed( void );
 void displayThingspeakExtraction( void );
 void displayThingspeakExtractionInformation( void );
 void saveToFlashChannelID(int value);
+void displayOTAServer( String ipAddress );
 
 //Dashboard Public Function
 void dashboardSetup( void );

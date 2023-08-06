@@ -468,7 +468,6 @@ int dashboardLoop( void )
   return  errorMessage;
 }
 
-// TODO: POWERTHEFT DISPLAY
 int dashboardPowerTheftDisplay( void )
 {
   int returnVal = (UIDashboardError) BLANK_ERROR_MESSAGE;
@@ -501,6 +500,19 @@ void dashBoardPowerTheftDetectedSetup( void )
 
     thingSpeakTransmitPowerTheftDetected();
     sendPowerTheftDetected();
+}
+
+void displayOTAServer( String ipAddress )
+{
+  String otaServer = "http://" + ipAddress + "/update";
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextSize(1);
+  // Set the font colour to be yellow with no background, set to font 7
+  tft.setTextColor(TFT_WHITE); tft.setTextFont(4);
+  tft.setTextDatum(MC_DATUM);
+  tft.drawString("OTA Server Started", tft.width()/2,tft.height()/2-CENTER_TEXT_PADDING);
+  tft.setTextFont(2);
+  tft.drawString(otaServer, tft.width()/2,tft.height()/2);
 }
 
 /* -------------------- Private Function Definition -------------------------------- */
@@ -721,16 +733,16 @@ static void updateStatusDoorSetup(void)
   {
     if ( ( millis() - doorMillis ) >= UPDATE_STATUS_TIME )
     {
-      if ( !doorSensorValue() )
+      if ( doorSensorValue() )
       {
         tft.setTextColor(TFT_SKYBLUE,TFT_BLACK,true);
-        tft.println("DOOR SENSOR ENABLED  ");
+        tft.println("DOOR SENSOR ENABLED   ");
       }
 
       else
       {
         tft.setTextColor(TFT_RED,TFT_BLACK,true);
-        tft.println("DOOR SENSOR ACTIVATED ");
+        tft.println("DOOR SENSOR ACTIVATED   ");
         if ( millis() - doorTwillioMillis >= UPDATE_TWILLIO_TIME ) 
         {
           doorTwillioMillis = millis();
@@ -763,13 +775,13 @@ static void updateStatusMotionSetup(void)
       if ( !motionSensorValue() )
       {
         tft.setTextColor(TFT_SKYBLUE,TFT_BLACK,true);
-        tft.println("MOTION SENSOR ENABLED ");
+        tft.println("MOTION SENSOR ENABLED  ");
       }
 
       else
       {
         tft.setTextColor(TFT_RED,TFT_BLACK,true);
-        tft.println("MOTION SENSOR ACTIVE");
+        tft.println("MOTION SENSOR ACTIVATED");
         if ( millis() - motionTwillioMillis >= UPDATE_TWILLIO_TIME ) 
         {
           motionTwillioMillis = millis();
